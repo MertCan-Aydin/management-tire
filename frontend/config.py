@@ -1,5 +1,6 @@
 import os
 
+
 class Config:
     APP_NAME     = "Scalable Management Panel"
     APP_VERSION  = "1.0.0"

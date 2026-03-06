@@ -1,37 +1,37 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security.api_key import APIKeyHeader
 from app.database import engine, Base
+from app.config import settings
 from app.routers import suppliers, products, customers, sales, purchases, expenses, reports, dashboard
 
-# Tabloları oluştur
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(
-    title="Management Panel API",
-    description="Scalable Management Panel - FastAPI + PostgreSQL",
-    version="1.0.0"
-)
+app = FastAPI(docs_url=None, redoc_url=None)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(dashboard.router,  prefix="/api/dashboard",  tags=["Dashboard"])
-app.include_router(suppliers.router,  prefix="/api/suppliers",  tags=["Tedarikçiler"])
-app.include_router(products.router,   prefix="/api/products",   tags=["Ürünler"])
-app.include_router(customers.router,  prefix="/api/customers",  tags=["Müşteriler"])
-app.include_router(sales.router,      prefix="/api/sales",      tags=["Satışlar"])
-app.include_router(purchases.router,  prefix="/api/purchases",  tags=["Alımlar"])
-app.include_router(expenses.router,   prefix="/api/expenses",   tags=["Giderler"])
-app.include_router(reports.router,    prefix="/api/reports",    tags=["Raporlar"])
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-@app.get("/")
-def root():
-    return {"status": "ok", "message": "Management Panel API çalışıyor"}
+def verify_api_key(key: str = Security(api_key_header)):
+    if key != settings.API_KEY:
+        raise HTTPException(status_code=403, detail="Geçersiz veya eksik API anahtarı")
+    return key
+
+deps = [Depends(verify_api_key)]
+app.include_router(dashboard.router, prefix="/api/dashboard", dependencies=deps)
+app.include_router(suppliers.router, prefix="/api/suppliers", dependencies=deps)
+app.include_router(products.router,  prefix="/api/products",  dependencies=deps)
+app.include_router(customers.router, prefix="/api/customers", dependencies=deps)
+app.include_router(sales.router,     prefix="/api/sales",     dependencies=deps)
+app.include_router(purchases.router, prefix="/api/purchases", dependencies=deps)
+app.include_router(expenses.router,  prefix="/api/expenses",  dependencies=deps)
+app.include_router(reports.router,   prefix="/api/reports",   dependencies=deps)
 
 @app.get("/health")
 def health():

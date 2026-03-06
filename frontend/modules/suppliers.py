@@ -155,7 +155,7 @@ class SuppliersModule(BaseModule):
                 decimals=2, min=0.01, max=supplier["current_debt"]
             )
             if not (ok and amount > 0): return
-            result = api.pay_supplier(sid, amount)
+            result = api.pay_supplier_debt(sid, amount)
             self._last_payment_id = result["id"]
             self.btn_undo.setEnabled(True)
             QMessageBox.information(self, "Basarili", f"{amount:,.2f} TL odeme islendi.")
