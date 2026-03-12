@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
         # Nav buttons
         nav_buttons = [
             ("Satis (POS)", 0), ("Urunler & Stok", 1), ("Tedarkiciler", 2),
-            ("Musteriler", 3), ("Giderler", 4), ("Alim-Satim Gecmisi", 5), ("Raporlar", 6)
+            ("Musteriler", 3), ("Raporlar", 4), ("Giderler", 5), ("Alim-Satim Gecmisi", 6)
         ]
         # Rearrange stacked indices to match
         for i, (label, idx) in enumerate(nav_buttons):

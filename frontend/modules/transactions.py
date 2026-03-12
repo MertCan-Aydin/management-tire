@@ -77,7 +77,7 @@ class HistoryModule(BaseModule):
 
     def _load_sales_history(self):
         try:
-            sales = api.get_sales_history()
+            sales = api.get_sales()
             self.sales_table.setRowCount(0)
             for sale in sales:
                 for item in sale.get("items", []):
@@ -103,7 +103,7 @@ class HistoryModule(BaseModule):
 
     def _load_purchases_history(self):
         try:
-            purchases = api.get_purchases_history()
+            purchases = api.get_purchases()
             self.purchases_table.setRowCount(0)
             for purchase in purchases:
                 for item in purchase.get("items", []):
