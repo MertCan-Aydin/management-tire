@@ -15,8 +15,9 @@ class LoginDialog(QDialog):
         self.setWindowTitle(Config.APP_NAME)
         self.setFixedSize(340, 460)
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.MSWindowsFixedSizeDialogHint)
-        self.token   = None
-        self._pin    = ""
+        self.token    = None
+        self.username = "user"
+        self._pin     = ""
         self._mode   = "login"   # "login" veya "setup"
         self._setup_mode = False
         self._confirm_pin = ""   # setup'ta ilk girilen PIN
