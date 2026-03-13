@@ -125,6 +125,15 @@ class LoginDialog(QDialog):
                 d.setText("○")
                 d.setStyleSheet("font-size:28px;color:#45475a;")
 
+    def keyPressEvent(self, event):
+        key = event.text()
+        if key.isdigit():
+            self._key_pressed(key)
+        elif event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self._key_pressed("✓")
+        elif event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete):
+            self._key_pressed("←")
+
     def _key_pressed(self, key):
         self.lbl_error.setText("")
         if key == "←":
