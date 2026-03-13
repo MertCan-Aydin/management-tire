@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from decimal import Decimal
 
 
 # ── Supplier ──────────────────────────────────────────────────────────────────
@@ -17,6 +18,7 @@ class SupplierOut(BaseModel):
     name: str
     contact_info: Optional[str]
     current_debt: float
+    is_deleted: bool = False
 
     class Config:
         from_attributes = True
@@ -51,6 +53,7 @@ class ProductOut(BaseModel):
     supplier_id: Optional[int]
     supplier_name: Optional[str] = None
     image_path: Optional[str]
+    is_deleted: bool = False
 
     class Config:
         from_attributes = True
@@ -97,10 +100,12 @@ class SaleCreate(BaseModel):
 
 class SaleItemOut(BaseModel):
     id: int
-    product_id: int
-    product_name: Optional[str] = None
+    product_id: Optional[int]
+    product_name: Optional[str] = None   # product_name_snap'ten gelir
     quantity: int
     unit_price: float
+    unit_cost: float = 0.0
+    line_profit: float = 0.0
     is_cancelled: bool
 
     class Config:
@@ -110,11 +115,14 @@ class SaleOut(BaseModel):
     id: int
     timestamp: datetime
     total_amount: float
+    total_cost: float = 0.0
+    profit: float = 0.0
     discount: float
     payment_method: str
     customer_id: Optional[int]
     customer_name: Optional[str] = None
     is_cancelled: bool
+    is_loss: bool = False
     items: List[SaleItemOut] = []
 
     class Config:
@@ -133,7 +141,7 @@ class PurchaseCreate(BaseModel):
 
 class PurchaseItemOut(BaseModel):
     id: int
-    product_id: int
+    product_id: Optional[int]
     product_name: Optional[str] = None
     quantity: int
     unit_price: float
@@ -192,6 +200,7 @@ class CancellationLogOut(BaseModel):
     description: str
     cancelled_qty: Optional[int]
     refund_amount: Optional[float]
+    cost_amount: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -199,10 +208,21 @@ class CancellationLogOut(BaseModel):
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 class DashboardOut(BaseModel):
-    total_sales: float
-    total_expenses: float
-    total_payments: float
-    net_balance: float
+    # Gelir
+    total_sales: float           # toplam satış tutarı
+    total_cost: float            # toplam satış maliyeti (FIFO)
+    gross_profit: float          # brüt kar = satış - maliyet
+    # Giderler
+    total_expenses: float        # operasyonel giderler
+    total_payments: float        # tedarikçi ödemeleri
+    # Net
+    net_profit: float            # net kar = brüt kar - giderler
+    net_balance: float           # kasa = satış - gider - ödeme
+    # Ödeme türleri
+    cash_sales: float
+    card_sales: float
+    # İptal özeti
+    total_cancelled_refund: float
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
@@ -210,9 +230,18 @@ class SaleReportItem(BaseModel):
     id: int
     timestamp: datetime
     total_amount: float
+    total_cost: float = 0.0
+    profit: float = 0.0
     payment_method: str
+    is_loss: bool = False
+    is_cancelled: bool = False
 
 class ReportOut(BaseModel):
     period: str
-    total: float
+    total_sales: float
+    total_cost: float
+    gross_profit: float
+    total_expenses: float
+    net_profit: float
+    loss_count: int       # zararlı satış adedi
     sales: List[SaleReportItem]

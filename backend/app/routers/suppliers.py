@@ -1,3 +1,4 @@
+from decimal import Decimal, ROUND_HALF_UP
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -8,9 +9,13 @@ from app.schemas import SupplierCreate, SupplierUpdate, SupplierOut, SupplierPay
 router = APIRouter()
 
 
+def _d(v) -> Decimal:
+    return Decimal(str(v or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
 @router.get("", response_model=List[SupplierOut])
 def list_suppliers(db: Session = Depends(get_db)):
-    return db.query(Supplier).all()
+    return db.query(Supplier).filter(Supplier.is_deleted == False).all()
 
 
 @router.post("", response_model=SupplierOut, status_code=201)
@@ -24,7 +29,10 @@ def create_supplier(data: SupplierCreate, db: Session = Depends(get_db)):
 
 @router.put("/{supplier_id}", response_model=SupplierOut)
 def update_supplier(supplier_id: int, data: SupplierUpdate, db: Session = Depends(get_db)):
-    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    supplier = db.query(Supplier).filter(
+        Supplier.id == supplier_id,
+        Supplier.is_deleted == False
+    ).first()
     if not supplier:
         raise HTTPException(status_code=404, detail="Tedarikçi bulunamadı")
     for field, value in data.model_dump(exclude_none=True).items():
@@ -36,34 +44,42 @@ def update_supplier(supplier_id: int, data: SupplierUpdate, db: Session = Depend
 
 @router.delete("/{supplier_id}")
 def delete_supplier(supplier_id: int, db: Session = Depends(get_db)):
-    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    supplier = db.query(Supplier).filter(
+        Supplier.id == supplier_id,
+        Supplier.is_deleted == False
+    ).first()
     if not supplier:
         raise HTTPException(status_code=404, detail="Tedarikçi bulunamadı")
-    if supplier.current_debt > 0:
+    if _d(supplier.current_debt) > 0:
         raise HTTPException(
             status_code=400,
-            detail=f"Tedarikçinin {supplier.current_debt:.2f} ₺ ödenmemiş borcu var!"
+            detail=f"Tedarikçinin {float(_d(supplier.current_debt)):,.2f} ₺ ödenmemiş borcu var!"
         )
-    db.delete(supplier)
+    supplier.is_deleted = True
     db.commit()
     return {"ok": True}
 
 
 @router.post("/{supplier_id}/pay", response_model=SupplierPaymentOut)
 def pay_supplier_debt(supplier_id: int, data: SupplierPaymentCreate, db: Session = Depends(get_db)):
-    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    supplier = db.query(Supplier).filter(
+        Supplier.id == supplier_id,
+        Supplier.is_deleted == False
+    ).first()
     if not supplier:
         raise HTTPException(status_code=404, detail="Tedarikçi bulunamadı")
-    if data.amount <= 0:
+
+    amount = _d(data.amount)
+    if amount <= 0:
         raise HTTPException(status_code=400, detail="Ödeme tutarı sıfırdan büyük olmalıdır")
-    if data.amount > supplier.current_debt:
+    if amount > _d(supplier.current_debt):
         raise HTTPException(
             status_code=400,
-            detail=f"Ödeme tutarı ({data.amount:.2f} ₺) mevcut borçtan ({supplier.current_debt:.2f} ₺) fazla olamaz"
+            detail=f"Ödeme tutarı ({float(amount):,.2f} ₺) mevcut borçtan ({float(_d(supplier.current_debt)):,.2f} ₺) fazla olamaz"
         )
 
-    supplier.current_debt = max(0.0, supplier.current_debt - data.amount)
-    payment = SupplierPayment(supplier_id=supplier_id, amount=data.amount)
+    supplier.current_debt = float(max(Decimal("0"), _d(supplier.current_debt) - amount))
+    payment = SupplierPayment(supplier_id=supplier_id, amount=float(amount))
     db.add(payment)
     db.commit()
     db.refresh(payment)
@@ -76,7 +92,7 @@ def undo_supplier_payment(supplier_id: int, payment_id: int, db: Session = Depen
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not payment or not supplier:
         raise HTTPException(status_code=404, detail="Kayıt bulunamadı")
-    supplier.current_debt += payment.amount
+    supplier.current_debt = float(_d(supplier.current_debt) + _d(payment.amount))
     db.delete(payment)
     db.commit()
-    return {"ok": True, "restored_debt": supplier.current_debt}
+    return {"ok": True, "restored_debt": float(_d(supplier.current_debt))}
