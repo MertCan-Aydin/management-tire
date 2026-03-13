@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QLabel, QVBoxLayout,
                              QWidget, QHBoxLayout, QPushButton, QStackedWidget,
-                             QFrame, QMessageBox)
+                             QFrame, QMessageBox, QDialog)
 from PyQt6.QtCore import Qt
 from config import Config
 
@@ -15,9 +15,9 @@ from modules.customers import CustomersModule
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, username=""):
         super().__init__()
-        self.setWindowTitle(f"{Config.APP_NAME} v{Config.APP_VERSION}")
+        self.setWindowTitle(f"{Config.APP_NAME} v{Config.APP_VERSION} — {username}")
         self.setGeometry(100, 100, 1280, 800)
 
         central_widget = QWidget()
@@ -217,7 +217,17 @@ def main():
                              f"config.py dosyasindaki API_BASE_URL adresini kontrol edin.")
         sys.exit(1)
 
-    window = MainWindow()
+    # Login ekranı
+    from login import LoginDialog
+    login_dialog = LoginDialog()
+    login_dialog.setStyleSheet(app.styleSheet())
+    if login_dialog.exec() != QDialog.DialogCode.Accepted:
+        sys.exit(0)
+
+    # Token'ı api_client'a aktar
+    api.set_token(login_dialog.token)
+
+    window = MainWindow(username=login_dialog.username)
     window.show()
     sys.exit(app.exec())
 

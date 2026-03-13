@@ -16,6 +16,12 @@ class APIClient:
             "Connection":    "close",
         })
 
+    def set_token(self, token: str):
+        """Login sonrası JWT token'ı header'a ekle."""
+        self.session.headers.update({
+            "Authorization": f"Bearer {token}"
+        })
+
     def get(self, path):
         try:
             r = self.session.get(f"{self.base_url}{path}", timeout=10)

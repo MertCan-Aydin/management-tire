@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security.api_key import APIKeyHeader
 from app.database import engine, Base
 from app.config import settings
-from app.routers import suppliers, products, customers, sales, purchases, expenses, reports, dashboard
+from app.routers import suppliers, products, customers, sales, purchases, expenses, reports, dashboard, auth
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +24,10 @@ def verify_api_key(key: str = Security(api_key_header)):
     return key
 
 deps = [Depends(verify_api_key)]
+
+# Auth endpoint'leri API key gerektirmez (login için)
+app.include_router(auth.router,      prefix="/api/auth")
+
 app.include_router(dashboard.router, prefix="/api/dashboard", dependencies=deps)
 app.include_router(suppliers.router, prefix="/api/suppliers", dependencies=deps)
 app.include_router(products.router,  prefix="/api/products",  dependencies=deps)
