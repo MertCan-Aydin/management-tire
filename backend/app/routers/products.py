@@ -139,13 +139,30 @@ def update_product(product_id: int, data: ProductUpdate, db: Session = Depends(g
 
 @router.delete("/{product_id}")
 def delete_product(product_id: int, db: Session = Depends(get_db)):
-    """Soft-delete — geçmiş satışlarda ürün adı korunur."""
+    """Soft-delete — geçmiş satışlarda ürün adı korunur.
+    Kalan stok için tedarikçi borcu düşülür."""
     product = db.query(Product).filter(
         Product.id == product_id,
         Product.is_deleted == False
     ).first()
     if not product:
         raise HTTPException(status_code=404, detail="Ürün bulunamadı")
+
+    # Kalan stok varsa tedarikçi borcunu düş
+    if product.stock > 0 and product.supplier_id:
+        supplier = db.query(Supplier).filter(Supplier.id == product.supplier_id).first()
+        if supplier:
+            debt_reduction = _d(product.stock) * _d(product.cost_price)
+            new_debt = _d(supplier.current_debt) - debt_reduction
+            supplier.current_debt = float(max(new_debt, Decimal("0")))
+
+    # Kalan batch'leri sıfırla
+    batches = db.query(ProductBatch).filter(
+        ProductBatch.product_id == product_id,
+        ProductBatch.quantity > 0
+    ).all()
+    for batch in batches:
+        batch.quantity = 0
 
     product.is_deleted = True
     product.stock = 0

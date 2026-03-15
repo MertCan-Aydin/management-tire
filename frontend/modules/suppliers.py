@@ -104,7 +104,7 @@ class SuppliersModule(BaseModule):
             if not data["name"]:
                 QMessageBox.warning(self, "Hata", "Firma adi bos olamaz!"); return
             try:
-                api.create_supplier(data["name"], data["contact_info"])
+                api.create_supplier(data)
                 self.load_suppliers()
             except APIError as e:
                 QMessageBox.critical(self, "Hata", str(e))
@@ -122,7 +122,7 @@ class SuppliersModule(BaseModule):
                 data = dlg.get_data()
                 if not data["name"]:
                     QMessageBox.warning(self, "Hata", "Firma adi bos olamaz!"); return
-                api.update_supplier(sid, data["name"], data["contact_info"])
+                api.update_supplier(sid, data)
                 self.load_suppliers()
         except APIError as e:
             QMessageBox.critical(self, "Hata", str(e))
@@ -173,7 +173,7 @@ class SuppliersModule(BaseModule):
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply != QMessageBox.StandardButton.Yes: return
         try:
-            api.undo_supplier_payment(self._last_payment_id)
+            api.undo_supplier_payment(sid, self._last_payment_id)
             self._last_payment_id = None
             self.btn_undo.setEnabled(False)
             QMessageBox.information(self, "Basarili", "Odeme geri alindi.")
