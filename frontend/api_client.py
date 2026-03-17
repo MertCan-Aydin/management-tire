@@ -94,6 +94,18 @@ class APIClient:
         return self.post(f"/api/suppliers/{sid}/pay", {"amount": amount})
     def undo_supplier_payment(self, sid, pid):
         return self.delete(f"/api/suppliers/{sid}/payments/{pid}")
+    def get_supplier_payments(self, sid):
+        return self.get(f"/api/suppliers/{sid}/payments")
+
+    # ── Supplier Contacts ─────────────────────────────────────────────────────
+    def get_supplier_contacts(self, sid):
+        return self.get(f"/api/suppliers/{sid}/contacts")
+    def create_supplier_contact(self, sid, data):
+        return self.post(f"/api/suppliers/{sid}/contacts", data)
+    def update_supplier_contact(self, sid, cid, data):
+        return self.put(f"/api/suppliers/{sid}/contacts/{cid}", data)
+    def delete_supplier_contact(self, sid, cid):
+        return self.delete(f"/api/suppliers/{sid}/contacts/{cid}")
 
     # ── Products ──────────────────────────────────────────────────
     def get_products(self):
@@ -165,6 +177,49 @@ class APIClient:
         return self.get("/api/reports/supplier-summary")
     def get_customer_summary(self):
         return self.get("/api/reports/customer-summary")
+
+    # ── Product Batches ───────────────────────────────────────────────────────
+    def get_product_batches(self, product_id):
+        return self.get(f"/api/products/{product_id}/batches")
+
+    def add_product_batch(self, product_id, data):
+        return self.post(f"/api/products/{product_id}/batches", data)
+
+    def update_product_batch(self, product_id, batch_id, data):
+        return self.put(f"/api/products/{product_id}/batches/{batch_id}", data)
+
+    def delete_product_batch(self, product_id, batch_id):
+        return self.delete(f"/api/products/{product_id}/batches/{batch_id}")
+
+    # ── Pricing ───────────────────────────────────────────────────────────────
+    def update_product_price(self, product_id, price):
+        return self.patch(f"/api/products/{product_id}/price", {"price": price})
+
+    # ── Product Types / Brands / Models ──────────────────────────────────────
+    def get_product_types(self):
+        return self.get("/api/products/types")
+    def create_product_type(self, name):
+        return self.post("/api/products/types", {"name": name})
+    def delete_product_type(self, type_id):
+        return self.delete(f"/api/products/types/{type_id}")
+
+    def get_product_brands(self, type_id=None):
+        url = "/api/products/brands"
+        if type_id: url += f"?type_id={type_id}"
+        return self.get(url)
+    def create_product_brand(self, type_id, name):
+        return self.post("/api/products/brands", {"product_type_id": type_id, "name": name})
+    def delete_product_brand(self, brand_id):
+        return self.delete(f"/api/products/brands/{brand_id}")
+
+    def get_product_models(self, brand_id=None):
+        url = "/api/products/models"
+        if brand_id: url += f"?brand_id={brand_id}"
+        return self.get(url)
+    def create_product_model(self, brand_id, name):
+        return self.post("/api/products/models", {"brand_id": brand_id, "name": name})
+    def delete_product_model(self, model_id):
+        return self.delete(f"/api/products/models/{model_id}")
 
 
 api = APIClient()

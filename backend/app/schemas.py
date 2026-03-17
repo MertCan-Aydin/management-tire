@@ -5,6 +5,25 @@ from decimal import Decimal
 
 
 # ── Supplier ──────────────────────────────────────────────────────────────────
+class SupplierContactCreate(BaseModel):
+    name:  str
+    title: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+
+class SupplierContactOut(BaseModel):
+    id:          int
+    supplier_id: int
+    name:        str
+    title:       Optional[str]
+    phone:       Optional[str]
+    email:       Optional[str]
+    notes:       Optional[str]
+
+    class Config:
+        from_attributes = True
+
 class SupplierCreate(BaseModel):
     name: str
     contact_info: Optional[str] = None
@@ -24,36 +43,76 @@ class SupplierOut(BaseModel):
         from_attributes = True
 
 
+# ── Product Type / Brand / Model ─────────────────────────────────────────────
+class ProductTypeOut(BaseModel):
+    id:   int
+    name: str
+    class Config: from_attributes = True
+
+class ProductTypeCreate(BaseModel):
+    name: str
+
+class ProductBrandOut(BaseModel):
+    id:              int
+    product_type_id: int
+    name:            str
+    class Config: from_attributes = True
+
+class ProductBrandCreate(BaseModel):
+    product_type_id: int
+    name:            str
+
+class ProductBrandModelOut(BaseModel):
+    id:       int
+    brand_id: int
+    name:     str
+    class Config: from_attributes = True
+
+class ProductBrandModelCreate(BaseModel):
+    brand_id: int
+    name:     str
+
 # ── Product ───────────────────────────────────────────────────────────────────
 class ProductCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    price: float
-    cost_price: float = 0.0
-    stock: int = 0
-    supplier_id: Optional[int] = None
-    image_path: Optional[str] = None
+    name:            str
+    description:     Optional[str] = None
+    price:           float
+    cost_price:      float = 0.0
+    stock:           int = 0
+    supplier_id:     Optional[int] = None
+    image_path:      Optional[str] = None
+    product_type_id: Optional[int] = None
+    brand_id:        Optional[int] = None
+    brand_model:     Optional[str] = None
 
 class ProductUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[float] = None
-    cost_price: Optional[float] = None
-    stock: Optional[int] = None
-    supplier_id: Optional[int] = None
-    image_path: Optional[str] = None
+    name:            Optional[str] = None
+    description:     Optional[str] = None
+    price:           Optional[float] = None
+    cost_price:      Optional[float] = None
+    stock:           Optional[int] = None
+    supplier_id:     Optional[int] = None
+    image_path:      Optional[str] = None
+    product_type_id: Optional[int] = None
+    brand_id:        Optional[int] = None
+    brand_model:     Optional[str] = None
 
 class ProductOut(BaseModel):
-    id: int
-    name: str
-    description: Optional[str]
-    price: float
-    cost_price: float
-    stock: int
-    supplier_id: Optional[int]
-    supplier_name: Optional[str] = None
-    image_path: Optional[str]
-    is_deleted: bool = False
+    id:              int
+    name:            str
+    description:     Optional[str]
+    price:           float
+    cost_price:      float
+    stock:           int
+    supplier_id:     Optional[int]
+    supplier_name:   Optional[str] = None
+    image_path:      Optional[str]
+    is_deleted:      bool = False
+    product_type_id: Optional[int] = None
+    product_type_name: Optional[str] = None
+    brand_id:        Optional[int] = None
+    brand_name:      Optional[str] = None
+    brand_model:     Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -205,6 +264,28 @@ class CancellationLogOut(BaseModel):
     class Config:
         from_attributes = True
 
+
+# ── Product Batch ─────────────────────────────────────────────────────────────
+class BatchOut(BaseModel):
+    id: int
+    product_id: int
+    quantity: int
+    cost_price: float
+    date_added: datetime
+
+    class Config:
+        from_attributes = True
+
+class BatchUpdate(BaseModel):
+    quantity: int
+    cost_price: float
+
+class BatchAdd(BaseModel):
+    quantity: int
+    cost_price: float
+
+class PriceUpdate(BaseModel):
+    price: float
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 class DashboardOut(BaseModel):

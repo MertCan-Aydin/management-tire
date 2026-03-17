@@ -13,27 +13,78 @@ class Supplier(Base):
     name         = Column(String(255), nullable=False, index=True)
     contact_info = Column(Text, nullable=True)
     current_debt = Column(Numeric(12, 2), default=0)
-    is_deleted   = Column(Boolean, default=False)   # soft-delete
+    is_deleted   = Column(Boolean, default=False)
 
     products  = relationship("Product",         back_populates="supplier")
     purchases = relationship("Purchase",         back_populates="supplier")
     payments  = relationship("SupplierPayment",  back_populates="supplier")
+    contacts  = relationship("SupplierContact",  back_populates="supplier", cascade="all, delete-orphan")
+
+
+class SupplierContact(Base):
+    __tablename__ = "supplier_contacts"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"), nullable=False)
+    name        = Column(String(255), nullable=False)
+    title       = Column(String(100), nullable=True)   # Görev / Unvan
+    phone       = Column(String(20),  nullable=True)   # 05XX XXX XX XX
+    email       = Column(String(255), nullable=True)
+    notes       = Column(Text,        nullable=True)
+
+    supplier = relationship("Supplier", back_populates="contacts")
+
+
+class ProductType(Base):
+    __tablename__ = "product_types"
+
+    id       = Column(Integer, primary_key=True, index=True)
+    name     = Column(String(100), nullable=False, unique=True)  # Lastik, Akü vb.
+    brands   = relationship("ProductBrand", back_populates="product_type", cascade="all, delete-orphan")
+    products = relationship("Product", back_populates="product_type")
+
+
+class ProductBrand(Base):
+    __tablename__ = "product_brands"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    product_type_id = Column(Integer, ForeignKey("product_types.id"), nullable=False)
+    name            = Column(String(100), nullable=False)
+
+    product_type = relationship("ProductType", back_populates="brands")
+    models       = relationship("ProductBrandModel", back_populates="brand", cascade="all, delete-orphan")
+
+
+class ProductBrandModel(Base):
+    __tablename__ = "product_brand_models"
+
+    id       = Column(Integer, primary_key=True, index=True)
+    brand_id = Column(Integer, ForeignKey("product_brands.id"), nullable=False)
+    name     = Column(String(100), nullable=False)
+
+    brand = relationship("ProductBrand", back_populates="models")
 
 
 class Product(Base):
     __tablename__ = "products"
 
-    id          = Column(Integer, primary_key=True, index=True)
-    name        = Column(String(255), nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    price       = Column(Numeric(12, 2), nullable=False)
-    cost_price  = Column(Numeric(12, 2), default=0)
-    stock       = Column(Integer, default=0)
-    image_path  = Column(String(512), nullable=True)
-    is_deleted  = Column(Boolean, default=False)    # soft-delete
+    id              = Column(Integer, primary_key=True, index=True)
+    name            = Column(String(255), nullable=False, index=True)
+    description     = Column(Text, nullable=True)
+    price           = Column(Numeric(12, 2), nullable=False)
+    cost_price      = Column(Numeric(12, 2), default=0)
+    stock           = Column(Integer, default=0)
+    image_path      = Column(String(512), nullable=True)
+    is_deleted      = Column(Boolean, default=False)
+
+    product_type_id = Column(Integer, ForeignKey("product_types.id"), nullable=True)
+    brand_id        = Column(Integer, ForeignKey("product_brands.id"), nullable=True)
+    brand_model     = Column(String(100), nullable=True)   # Lastik için serbest metin
 
     supplier_id    = Column(Integer, ForeignKey("suppliers.id"), nullable=True)
     supplier       = relationship("Supplier",       back_populates="products")
+    product_type   = relationship("ProductType",    back_populates="products")
+    brand          = relationship("ProductBrand")
     batches        = relationship("ProductBatch",   back_populates="product", cascade="all, delete-orphan")
     sale_items     = relationship("SaleItem",       back_populates="product")
     purchase_items = relationship("PurchaseItem",   back_populates="product")

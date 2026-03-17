@@ -1,3 +1,4 @@
+import re
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget,
                              QTableWidgetItem, QHeaderView, QMessageBox, QDialog,
                              QLabel, QLineEdit, QFormLayout, QTextEdit)
@@ -6,16 +7,61 @@ from modules.base import BaseModule
 from api_client import api, APIError
 
 
+def format_phone(raw: str) -> str:
+    digits = re.sub(r'[^0-9]', '', raw)
+    if len(digits) == 10 and digits[0] == '5':
+        digits = '0' + digits
+    if len(digits) == 11 and digits[:2] == '05':
+        return f"{digits[0:4]} {digits[4:7]} {digits[7:9]} {digits[9:11]}"
+    return raw
+
+def format_plate(raw: str) -> str:
+    cleaned = re.sub(r'\s+', ' ', raw.upper().strip())
+    if re.match(r'^\d{2} [A-Z]+ \d+$', cleaned):
+        return cleaned
+    m = re.match(r'^(\d{2})([A-Z]+)(\d+)$', re.sub(r'\s', '', cleaned))
+    if m:
+        return f"{m.group(1)} {m.group(2)} {m.group(3)}"
+    return cleaned
+
+def is_valid_email(email: str) -> bool:
+    return bool(re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email.strip()))
+
+
+class PhoneLineEdit(QLineEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setPlaceholderText("0532 123 45 67")
+        self.setMaxLength(14)
+        self.textEdited.connect(self._on_edit)
+
+    def _on_edit(self, text):
+        digits = re.sub(r'[^0-9]', '', text)
+        if not digits: return
+        fmt = digits[:4]
+        if len(digits) >= 5: fmt += ' ' + digits[4:7]
+        if len(digits) >= 8: fmt += ' ' + digits[7:9]
+        if len(digits) >= 10: fmt += ' ' + digits[9:11]
+        self.blockSignals(True)
+        self.setText(fmt)
+        self.setCursorPosition(len(fmt))
+        self.blockSignals(False)
+
+    def get_formatted(self): return format_phone(self.text())
+
+
 class CustomerDialog(QDialog):
     def __init__(self, parent=None, customer=None):
         super().__init__(parent)
         self.setWindowTitle("Musteri Ekle" if not customer else "Musteri Duzenle")
         self.setFixedSize(400, 400)
         layout = QFormLayout(self)
-        self.name_input = QLineEdit()
-        self.phone_input = QLineEdit()
+        self.name_input      = QLineEdit()
+        self.phone_input     = PhoneLineEdit()
         self.car_brand_input = QLineEdit()
         self.car_plate_input = QLineEdit()
+        self.car_plate_input.setPlaceholderText("34 ABC 123")
+        self.car_plate_input.setMaxLength(12)
         self.notes_input = QTextEdit(); self.notes_input.setMaximumHeight(80)
         if customer:
             self.name_input.setText(customer.get("name", ""))
@@ -35,9 +81,13 @@ class CustomerDialog(QDialog):
         layout.addRow(btn_layout)
 
     def get_data(self):
-        return {"name": self.name_input.text().strip(), "phone": self.phone_input.text().strip(),
-                "car_brand": self.car_brand_input.text().strip(), "car_plate": self.car_plate_input.text().strip(),
-                "notes": self.notes_input.toPlainText().strip()}
+        return {
+            "name":      self.name_input.text().strip(),
+            "phone":     self.phone_input.get_formatted() or None,
+            "car_brand": self.car_brand_input.text().strip() or None,
+            "car_plate": format_plate(self.car_plate_input.text()) if self.car_plate_input.text().strip() else None,
+            "notes":     self.notes_input.toPlainText().strip() or None,
+        }
 
 
 class CustomerHistoryDialog(QDialog):
@@ -54,7 +104,7 @@ class CustomerHistoryDialog(QDialog):
             for row, sale in enumerate(sales):
                 self.table.insertRow(row)
                 self.table.setItem(row, 0, QTableWidgetItem(f"SAT-{sale['id']}"))
-                self.table.setItem(row, 1, QTableWidgetItem(sale["timestamp"][:16].replace("T", " ")))
+                self.table.setItem(row, 1, QTableWidgetItem(sale["timestamp"][:19].replace("T", " ")))
                 self.table.setItem(row, 2, QTableWidgetItem(sale["payment_method"]))
                 disc = f"{sale['discount']:,.2f} TL" if sale['discount'] > 0 else "-"
                 self.table.setItem(row, 3, QTableWidgetItem(disc))

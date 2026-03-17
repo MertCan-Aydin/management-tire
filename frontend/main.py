@@ -16,6 +16,9 @@ from modules.reports import ReportsModule
 from modules.expenses import ExpensesModule
 from modules.transactions import HistoryModule
 from modules.customers import CustomersModule
+from modules.pricing import PricingModule
+from modules.catalog import CatalogModule
+from modules.catalog import CatalogModule
 
 # ── Temalar ───────────────────────────────────────────────────────────────────
 THEMES = {
@@ -347,11 +350,13 @@ class HomeWidget(QWidget):
     CARDS = [
         ("🛒", "Satış (POS)",     "Hızlı satış ve kasa",         "#5865f2", 0),
         ("📦", "Ürünler & Stok",  "Ürün ve stok yönetimi",        "#eb459e", 1),
-        ("🚚", "Tedarikçiler",    "Tedarikçi ve borç takibi",     "#3ba55c", 2),
-        ("👤", "Müşteriler",      "Müşteri kayıtları",            "#faa61a", 3),
-        ("📊", "Raporlar",        "Satış ve kar raporları",       "#9b59b6", 4),
-        ("💸", "Giderler",        "Gider takibi",                 "#ed4245", 5),
-        ("🗂", "Geçmiş",          "Alım-satım geçmişi",          "#747f8d", 6),
+        ("💰", "Fiyatlandırma",   "Ürün fiyatlarını düzenle",     "#f59e0b", 2),
+        ("📋", "Katalog",         "Tür, marka yönetimi",          "#06b6d4", 3),
+        ("🚚", "Tedarikçiler",    "Tedarikçi ve borç takibi",     "#3ba55c", 4),
+        ("👤", "Müşteriler",      "Müşteri kayıtları",            "#faa61a", 5),
+        ("📊", "Raporlar",        "Satış ve kar raporları",       "#9b59b6", 6),
+        ("💸", "Giderler",        "Gider takibi",                 "#ed4245", 7),
+        ("🗂", "Geçmiş",          "Alım-satım geçmişi",          "#747f8d", 8),
     ]
 
     def __init__(self, switch_fn, parent=None):
@@ -469,14 +474,16 @@ class MainWindow(QMainWindow):
         nav_lay.setSpacing(2)
 
         nav_items = [
-            ("🏠", "Ana Sayfa",      -1),
-            ("🛒", "Satış (POS)",     0),
-            ("📦", "Ürünler & Stok",  1),
-            ("🚚", "Tedarikçiler",    2),
-            ("👤", "Müşteriler",      3),
-            ("📊", "Raporlar",        4),
-            ("💸", "Giderler",        5),
-            ("🗂", "Geçmiş",          6),
+            ("🏠", "Ana Sayfa",       -1),
+            ("🛒", "Satış (POS)",      0),
+            ("📦", "Ürünler & Stok",   1),
+            ("💰", "Fiyatlandırma",    2),
+            ("📋", "Katalog",          3),
+            ("🚚", "Tedarikçiler",     4),
+            ("👤", "Müşteriler",       5),
+            ("📊", "Raporlar",         6),
+            ("💸", "Giderler",         7),
+            ("🗂", "Geçmiş",           8),
         ]
 
         for icon, label, idx in nav_items:
@@ -629,6 +636,8 @@ class MainWindow(QMainWindow):
         self.home_module      = HomeWidget(self._set_active)
         self.module_sales     = SalesModule()
         self.module_inventory = InventoryModule()
+        self.module_pricing   = PricingModule()
+        self.module_catalog   = CatalogModule()
         self.module_suppliers = SuppliersModule()
         self.module_customers = CustomersModule()
         self.module_reports   = ReportsModule()
@@ -637,15 +646,16 @@ class MainWindow(QMainWindow):
 
         all_mods = [
             self.home_module, self.module_sales, self.module_inventory,
-            self.module_suppliers, self.module_customers, self.module_reports,
-            self.module_expenses, self.module_history,
+            self.module_pricing, self.module_catalog, self.module_suppliers,
+            self.module_customers, self.module_reports, self.module_expenses,
+            self.module_history,
         ]
         for m in all_mods:
             self.stacked.addWidget(m)
 
-        for m in [self.module_sales, self.module_inventory, self.module_suppliers,
-                  self.module_customers, self.module_reports, self.module_expenses,
-                  self.module_history]:
+        for m in [self.module_sales, self.module_inventory, self.module_pricing,
+                  self.module_catalog, self.module_suppliers, self.module_customers,
+                  self.module_reports, self.module_expenses, self.module_history]:
             m.main_window = self
 
         return self.stacked

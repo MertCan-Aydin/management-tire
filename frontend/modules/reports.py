@@ -54,7 +54,7 @@ def _export_txt(filepath, period_label, data):
         f.write(f"{'-'*75}\n")
         for s in sales:
             flag = " ⚠" if s.get("is_loss") else ""
-            f.write(f"{s['id']:<8}{s['timestamp'][:16].replace('T',' '):<20}"
+            f.write(f"{s['id']:<8}{s['timestamp'][:19].replace('T',' '):<20}"
                     f"{s.get('payment_method','-'):<14}"
                     f"{s['total_amount']:>10,.2f}{s.get('total_cost',0):>10,.2f}"
                     f"{s.get('profit',0):>12,.2f}{flag}\n")
@@ -99,7 +99,7 @@ def _export_excel(filepath, period_label, data):
     for ri, s in enumerate(sales, hr+1):
         profit = s.get("profit",0.0); is_loss = s.get("is_loss",False)
         rf = loss_fill if is_loss else None
-        for col, val in enumerate([s["id"], s["timestamp"][:16].replace("T"," "),
+        for col, val in enumerate([s["id"], s["timestamp"][:19].replace("T"," "),
                                     s.get("payment_method","-"),
                                     round(s["total_amount"],2), round(s.get("total_cost",0),2),
                                     round(profit,2)], 1):
@@ -147,7 +147,7 @@ def _export_pdf(filepath, period_label, data):
     story.append(st); story.append(Spacer(1,0.5*cm))
     td=[["ID","Tarih","Odeme","Tutar (TL)","Maliyet (TL)","Kar/Zarar (TL)"]]
     for s in sales:
-        td.append([str(s["id"]),s["timestamp"][:16].replace("T"," "),s.get("payment_method","-"),
+        td.append([str(s["id"]),s["timestamp"][:19].replace("T"," "),s.get("payment_method","-"),
                    f"{s['total_amount']:,.2f}",f"{s.get('total_cost',0):,.2f}",f"{s.get('profit',0):,.2f}"])
     td.append(["","","TOPLAM",f"{data.get('total_sales',0):,.2f}",
                f"{data.get('total_cost',0):,.2f}",f"{data.get('gross_profit',0):,.2f}"])
@@ -237,7 +237,7 @@ class PeriodReportTab(QWidget):
                 profit  = s.get("profit",0.0)
                 is_loss = s.get("is_loss",False)
                 self.table.setItem(row,0,QTableWidgetItem(str(s["id"])))
-                self.table.setItem(row,1,QTableWidgetItem(s["timestamp"][:16].replace("T"," ")))
+                self.table.setItem(row,1,QTableWidgetItem(s["timestamp"][:19].replace("T"," ")))
                 self.table.setItem(row,2,QTableWidgetItem(s.get("payment_method","-")))
                 self.table.setItem(row,3,_right(f"{s['total_amount']:,.2f}"))
                 self.table.setItem(row,4,_right(f"{s.get('total_cost',0):,.2f}"))

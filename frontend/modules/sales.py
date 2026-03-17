@@ -28,6 +28,7 @@ class SalesModule(BaseModule):
 
         self.products_table = QTableWidget()
         self.products_table.setColumnCount(4)
+        self.products_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.products_table.setHorizontalHeaderLabels(["ID", "Urun", "Stok", "Fiyat (TL)"])
         self.products_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.products_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -48,6 +49,7 @@ class SalesModule(BaseModule):
 
         self.cart_table = QTableWidget()
         self.cart_table.setColumnCount(6)
+        self.cart_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.cart_table.setHorizontalHeaderLabels(
             ["Urun ID", "Urun Adi", "Miktar", "Birim Fiyat", "Maliyet", "Toplam"]
         )

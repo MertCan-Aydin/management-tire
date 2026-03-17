@@ -37,6 +37,7 @@ class ExpensesModule(BaseModule):
         layout.addLayout(controls)
 
         self.table = QTableWidget(); self.table.setColumnCount(4)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setHorizontalHeaderLabels(["ID", "Tarih & Saat", "Aciklama", "Tutar (TL)"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
