@@ -4,8 +4,10 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget
                              QDoubleSpinBox, QFormLayout)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
-from modules.base import BaseModule
+from modules.base import BaseModule, parse_brand_model
 from api_client import api, APIError
+
+SEASON_COLORS = {"Kislik": "#74c0fc", "Yazlik": "#ffd43b", "4 Mevsim": "#8ce99a"}
 
 LOW_STOCK_THRESHOLD = 3
 
@@ -27,9 +29,9 @@ class SalesModule(BaseModule):
         left_layout.addWidget(lbl_products)
 
         self.products_table = QTableWidget()
-        self.products_table.setColumnCount(4)
+        self.products_table.setColumnCount(6)
         self.products_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.products_table.setHorizontalHeaderLabels(["ID", "Urun", "Stok", "Fiyat (TL)"])
+        self.products_table.setHorizontalHeaderLabels(["ID", "Urun", "Marka", "Mevsim", "Stok", "Fiyat (TL)"])
         self.products_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.products_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.products_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -146,18 +148,31 @@ class SalesModule(BaseModule):
             self.products_table.setRowCount(0)
             for row, p in enumerate(products):
                 self.products_table.insertRow(row)
+                season, model = parse_brand_model(p.get("brand_model") or "")
+                # Urun adi: "Urun Adi · Model" formatinda goster
+                name_txt = p["name"]
+                if model:
+                    name_txt = f"{p['name']}  ·  {model}"
                 self.products_table.setItem(row, 0, QTableWidgetItem(str(p["id"])))
-                self.products_table.setItem(row, 1, QTableWidgetItem(p["name"]))
+                self.products_table.setItem(row, 1, QTableWidgetItem(name_txt))
+                self.products_table.setItem(row, 2, QTableWidgetItem(p.get("brand_name") or "-"))
+
+                season_item = QTableWidgetItem(season or "-")
+                season_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+                if season and season in SEASON_COLORS:
+                    season_item.setForeground(QColor(SEASON_COLORS[season]))
+                self.products_table.setItem(row, 3, season_item)
+
                 stock_item = QTableWidgetItem(str(p["stock"]))
                 stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
                 if p["stock"] <= 0:
                     stock_item.setForeground(QColor("#f38ba8"))
                 elif p["stock"] <= LOW_STOCK_THRESHOLD:
                     stock_item.setForeground(QColor("#fab387"))
-                self.products_table.setItem(row, 2, stock_item)
+                self.products_table.setItem(row, 4, stock_item)
                 price_item = QTableWidgetItem(f"{p['price']:,.2f}")
                 price_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                self.products_table.setItem(row, 3, price_item)
+                self.products_table.setItem(row, 5, price_item)
         except APIError as e:
             QMessageBox.critical(self, "Baglanti Hatasi", str(e))
 
@@ -169,8 +184,8 @@ class SalesModule(BaseModule):
         row = selected[0].row()
         product_id      = int(self.products_table.item(row, 0).text())
         product_name    = self.products_table.item(row, 1).text()
-        available_stock = int(self.products_table.item(row, 2).text())
-        price           = float(self.products_table.item(row, 3).text().replace(",", ""))
+        available_stock = int(self.products_table.item(row, 4).text())
+        price           = float(self.products_table.item(row, 5).text().replace(",", ""))
         cost_price      = float(self._products_cache.get(product_id, {}).get("cost_price", 0))
 
         if available_stock <= 0:

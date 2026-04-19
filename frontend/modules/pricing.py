@@ -3,8 +3,10 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget
                              QLabel, QDoubleSpinBox, QAbstractItemView)
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QColor, QIcon
-from modules.base import BaseModule
+from modules.base import BaseModule, parse_brand_model
 from api_client import api, APIError
+
+SEASON_COLORS = {"Kislik": "#74c0fc", "Yazlik": "#ffd43b", "4 Mevsim": "#8ce99a"}
 
 
 class InlinePriceWidget(QWidget):
@@ -160,15 +162,18 @@ class PricingModule(BaseModule):
 
         # Tablo
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
+        self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels([
-            "Urun Adi", "Tedarikci", "Maliyet (TL)", "Stok", "Satis Fiyati"
+            "Urun Adi", "Marka", "Model", "Mevsim", "Tedarikci", "Maliyet (TL)", "Stok", "Satis Fiyati"
         ])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setShowGrid(True)
@@ -191,23 +196,43 @@ class PricingModule(BaseModule):
             no_price = 0
             for row, p in enumerate(products):
                 self.table.insertRow(row)
+                season, model = parse_brand_model(p.get("brand_model") or "")
 
                 # Ürün adı
                 name_item = QTableWidgetItem(p["name"])
                 name_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
                 self.table.setItem(row, 0, name_item)
 
+                # Marka
+                brand_item = QTableWidgetItem(p.get("brand_name") or "-")
+                brand_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                brand_item.setForeground(QColor("#80848e"))
+                self.table.setItem(row, 1, brand_item)
+
+                # Model
+                model_item = QTableWidgetItem(model or "-")
+                model_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                self.table.setItem(row, 2, model_item)
+
+                # Mevsim
+                season_item = QTableWidgetItem(season or "-")
+                season_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+                season_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                if season and season in SEASON_COLORS:
+                    season_item.setForeground(QColor(SEASON_COLORS[season]))
+                self.table.setItem(row, 3, season_item)
+
                 # Tedarikçi
                 sup_item = QTableWidgetItem(p.get("supplier_name") or "-")
                 sup_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
                 sup_item.setForeground(QColor("#80848e"))
-                self.table.setItem(row, 1, sup_item)
+                self.table.setItem(row, 4, sup_item)
 
                 # Maliyet
                 cost_item = QTableWidgetItem(f"{p['cost_price']:,.2f} TL")
                 cost_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 cost_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-                self.table.setItem(row, 2, cost_item)
+                self.table.setItem(row, 5, cost_item)
 
                 # Stok
                 stock_item = QTableWidgetItem(str(p["stock"]))
@@ -215,11 +240,11 @@ class PricingModule(BaseModule):
                 stock_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
                 if p["stock"] <= 0:
                     stock_item.setForeground(QColor("#f38ba8"))
-                self.table.setItem(row, 3, stock_item)
+                self.table.setItem(row, 6, stock_item)
 
                 # Fiyat — inline widget
                 widget = InlinePriceWidget(p, self._save_price)
-                self.table.setCellWidget(row, 4, widget)
+                self.table.setCellWidget(row, 7, widget)
 
                 if (p.get("price") or 0) == 0:
                     no_price += 1

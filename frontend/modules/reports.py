@@ -5,8 +5,10 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidge
                              QFileDialog, QMessageBox, QFrame, QSplitter)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QBrush, QFont
-from modules.base import BaseModule
+from modules.base import BaseModule, parse_brand_model
 from api_client import api, APIError
+
+SEASON_COLORS = {"Kislik": "#74c0fc", "Yazlik": "#ffd43b", "4 Mevsim": "#8ce99a"}
 
 
 def _now_str():
@@ -280,9 +282,9 @@ class TopProductsTab(QWidget):
         layout.addWidget(hdr)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(6)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels(
-            ["Urun Adi","Toplam Adet","Toplam Satis","Toplam Maliyet","Toplam Kar","Durum"])
+            ["Urun Adi","Marka","Model","Mevsim","Toplam Adet","Toplam Satis","Toplam Maliyet","Toplam Kar","Durum"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self.table)
@@ -295,8 +297,15 @@ class TopProductsTab(QWidget):
                 self.table.insertRow(row)
                 is_loss = p.get("is_loss",False)
                 profit  = p.get("total_profit",0.0)
+                season, model = parse_brand_model(p.get("brand_model") or "")
+                season_item = _center(season or "-")
+                if season and season in SEASON_COLORS:
+                    season_item.setForeground(QBrush(QColor(SEASON_COLORS[season])))
                 cells = [
                     QTableWidgetItem(p["name"]),
+                    QTableWidgetItem(p.get("brand_name") or "-"),
+                    QTableWidgetItem(model or "-"),
+                    season_item,
                     _right(str(p["total_qty"])),
                     _right(f"{p['total_revenue']:,.2f} TL"),
                     _right(f"{p['total_cost']:,.2f} TL"),
@@ -306,14 +315,14 @@ class TopProductsTab(QWidget):
                 for col, item in enumerate(cells):
                     self.table.setItem(row, col, item)
                 if is_loss:
-                    for col in range(6):
+                    for col in range(9):
                         it = self.table.item(row,col)
                         if it: it.setBackground(QBrush(QColor("#2d1a1a")))
-                    self.table.item(row,4).setForeground(QBrush(QColor("#f38ba8")))
-                    self.table.item(row,5).setForeground(QBrush(QColor("#f38ba8")))
+                    self.table.item(row,7).setForeground(QBrush(QColor("#f38ba8")))
+                    self.table.item(row,8).setForeground(QBrush(QColor("#f38ba8")))
                 else:
-                    self.table.item(row,4).setForeground(QBrush(QColor("#a6e3a1")))
-                    self.table.item(row,5).setForeground(QBrush(QColor("#a6e3a1")))
+                    self.table.item(row,7).setForeground(QBrush(QColor("#a6e3a1")))
+                    self.table.item(row,8).setForeground(QBrush(QColor("#a6e3a1")))
         except APIError as e:
             QMessageBox.critical(self,"Hata",str(e))
 

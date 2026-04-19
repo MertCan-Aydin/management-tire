@@ -4,9 +4,29 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidge
                              QDateEdit, QSizePolicy)
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QColor, QBrush, QFont
-from modules.base import BaseModule
+from modules.base import BaseModule, parse_brand_model
 from api_client import api, APIError
 import datetime
+
+SEASON_COLORS = {"Kislik": "#74c0fc", "Yazlik": "#ffd43b", "4 Mevsim": "#8ce99a"}
+
+
+def _product_label(item, products_by_id):
+    """Satir ogesi icin 'Urun · Model (Mevsim)' etiketi uretir."""
+    base = item.get("product_name") or "-"
+    pid = item.get("product_id")
+    extras = []
+    if pid and products_by_id:
+        p = products_by_id.get(pid)
+        if p:
+            season, model = parse_brand_model(p.get("brand_model") or "")
+            if model and model not in base:
+                extras.append(model)
+            if season:
+                extras.append(f"({season})")
+    if extras:
+        return base + "  ·  " + " ".join(extras)
+    return base
 
 COLOR_CANCELLED  = QColor("#3b1f1f")
 COLOR_CANCEL_FG  = QColor("#f38ba8")
@@ -169,6 +189,7 @@ class HistoryModule(BaseModule):
         self._all_sales     = []
         self._all_purchases = []
         self._all_logs      = []
+        self._products_by_id = {}
 
     def _setup_sales_tab(self):
         layout = QVBoxLayout(self.tab_sales)
@@ -274,9 +295,16 @@ class HistoryModule(BaseModule):
         layout.addWidget(self.logs_table)
 
     def refresh_data(self):
+        self._load_products_cache()
         self._load_sales_history()
         self._load_purchases_history()
         self._load_cancellation_logs()
+
+    def _load_products_cache(self):
+        try:
+            self._products_by_id = {p["id"]: p for p in api.get_products()}
+        except APIError:
+            self._products_by_id = {}
 
     # ── Veri yükleme ──────────────────────────────────────────────────────────
     def _load_sales_history(self):
@@ -355,7 +383,7 @@ class HistoryModule(BaseModule):
                     QTableWidgetItem(fmt_dt(sale.get("timestamp"))),
                     QTableWidgetItem(sale.get("customer_name") or "Genel"),
                     QTableWidgetItem(sale.get("payment_method", "-")),
-                    QTableWidgetItem(item.get("product_name") or "-"),
+                    QTableWidgetItem(_product_label(item, self._products_by_id)),
                     _right(str(item["quantity"])),
                     _right(f"{item['unit_price']:,.2f} TL"),
                     _right(f"{item.get('unit_cost', 0):,.2f} TL"),
@@ -404,7 +432,7 @@ class HistoryModule(BaseModule):
                     QTableWidgetItem(f"ALIM-{purchase['id']}"),
                     QTableWidgetItem(fmt_dt(purchase.get("timestamp"))),
                     QTableWidgetItem(purchase.get("supplier_name") or "Bilinmiyor"),
-                    QTableWidgetItem(item.get("product_name") or "-"),
+                    QTableWidgetItem(_product_label(item, self._products_by_id)),
                     _right(str(item["quantity"])),
                     _right(f"{item['unit_price']:,.2f} TL"),
                     _right(f"{line_total:,.2f} TL"),
@@ -706,7 +734,7 @@ class HistoryModule(BaseModule):
                         QTableWidgetItem(sale["timestamp"][:16].replace("T", " ")),
                         QTableWidgetItem(sale.get("customer_name") or "Genel"),
                         QTableWidgetItem(sale.get("payment_method", "-")),
-                        QTableWidgetItem(item.get("product_name") or "-"),
+                        QTableWidgetItem(_product_label(item, getattr(self, "_products_by_id", {}))),
                         _right(str(item["quantity"])),
                         _right(f"{item['unit_price']:,.2f} TL"),
                         _right(f"{item.get('unit_cost', 0):,.2f} TL"),
@@ -771,7 +799,7 @@ class HistoryModule(BaseModule):
                         QTableWidgetItem(f"ALIM-{purchase['id']}"),
                         QTableWidgetItem(purchase["timestamp"][:16].replace("T", " ")),
                         QTableWidgetItem(purchase.get("supplier_name") or "Bilinmiyor"),
-                        QTableWidgetItem(item.get("product_name") or "-"),
+                        QTableWidgetItem(_product_label(item, getattr(self, "_products_by_id", {}))),
                         _right(str(item["quantity"])),
                         _right(f"{item['unit_price']:,.2f} TL"),
                         _right(f"{line_total:,.2f} TL"),

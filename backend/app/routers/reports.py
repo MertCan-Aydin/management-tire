@@ -79,8 +79,17 @@ def top_products(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     for item in items:
         pid  = item.product_id
         name = item.product_name_snap or (item.product.name if item.product else "Silinmiş")
+        brand_name  = None
+        brand_model = None
+        if item.product:
+            try:
+                brand_name = item.product.brand.name if item.product.brand else None
+            except Exception:
+                brand_name = None
+            brand_model = getattr(item.product, "brand_model", None)
         if pid not in stats:
             stats[pid] = {"product_id": pid, "name": name,
+                          "brand_name": brand_name, "brand_model": brand_model,
                           "total_qty": 0, "total_revenue": 0.0,
                           "total_cost": 0.0, "total_profit": 0.0}
         qty    = item.quantity

@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget
                              QDoubleSpinBox, QSpinBox, QFrame)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
-from modules.base import BaseModule
+from modules.base import BaseModule, parse_brand_model
 from api_client import api, APIError
 
 LOW_STOCK_THRESHOLD = 3
@@ -138,7 +138,7 @@ class ProductDialog(QDialog):
         self.model_combo.setEnabled(False)
 
         # Mevsim satiri sadece Lastik tipinde
-        is_tire = (self.type_combo.currentText() == "Lastik")
+        is_tire = ("lastik" in self.type_combo.currentText().lower())
         self.season_row_lbl.setVisible(is_tire)
         self.season_combo.setVisible(is_tire)
         self.season_combo.setEnabled(False)
@@ -165,7 +165,7 @@ class ProductDialog(QDialog):
 
     def _on_brand_changed(self, _):
         brand_id  = self.brand_combo.currentData()
-        is_tire   = (self.type_combo.currentText() == "Lastik")
+        is_tire   = ("lastik" in self.type_combo.currentText().lower())
         self.model_combo.clear()
         self.model_combo.addItem("-- Model Secin --", None)
 
@@ -219,7 +219,7 @@ class ProductDialog(QDialog):
             pass
 
     def get_data(self):
-        is_tire = (self.type_combo.currentText() == "Lastik")
+        is_tire = ("lastik" in self.type_combo.currentText().lower())
         brand_model = None
         if self.model_combo.currentData():
             model_name = self.model_combo.currentText()
@@ -399,9 +399,9 @@ class InventoryModule(BaseModule):
         layout.addLayout(controls)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(8)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
-            "ID", "Urun Adi", "Tip", "Marka", "Model", "Tedarikci", "Alis (TL)", "Stok"
+            "ID", "Urun Adi", "Tip", "Marka", "Mevsim", "Model", "Tedarikci", "Alis (TL)", "Stok"
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -430,21 +430,28 @@ class InventoryModule(BaseModule):
             products = api.get_products()
             self.table.setRowCount(0)
             for row, p in enumerate(products):
+                season, model = parse_brand_model(p.get("brand_model") or "")
                 self.table.insertRow(row)
                 self.table.setItem(row, 0, QTableWidgetItem(str(p["id"])))
                 self.table.setItem(row, 1, QTableWidgetItem(p["name"]))
                 self.table.setItem(row, 2, QTableWidgetItem(p.get("product_type_name") or "-"))
                 self.table.setItem(row, 3, QTableWidgetItem(p.get("brand_name") or "-"))
-                self.table.setItem(row, 4, QTableWidgetItem(p.get("brand_model") or "-"))
-                self.table.setItem(row, 5, QTableWidgetItem(p.get("supplier_name") or "-"))
+                season_item = QTableWidgetItem(season or "-")
+                season_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+                if season:
+                    colors = {"Kislik": "#74c0fc", "Yazlik": "#ffd43b", "4 Mevsim": "#8ce99a"}
+                    season_item.setForeground(QColor(colors.get(season, "#adb5bd")))
+                self.table.setItem(row, 4, season_item)
+                self.table.setItem(row, 5, QTableWidgetItem(model or "-"))
+                self.table.setItem(row, 6, QTableWidgetItem(p.get("supplier_name") or "-"))
                 cost_item = QTableWidgetItem(f"{p['cost_price']:,.2f}")
                 cost_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                self.table.setItem(row, 6, cost_item)
+                self.table.setItem(row, 7, cost_item)
                 stock_item = QTableWidgetItem(str(p["stock"]))
                 stock_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
                 if p["stock"] <= 0: stock_item.setForeground(QColor("#f38ba8"))
                 elif p["stock"] <= LOW_STOCK_THRESHOLD: stock_item.setForeground(QColor("#fab387"))
-                self.table.setItem(row, 7, stock_item)
+                self.table.setItem(row, 8, stock_item)
         except APIError as e:
             QMessageBox.critical(self, "Baglanti Hatasi", str(e))
 

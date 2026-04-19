@@ -11,14 +11,28 @@ Base.metadata.create_all(bind=engine)
 
 def _ensure_schema():
     """Basit runtime migration — yeni kolonlar eksikse ekler.
-    Hem SQLite hem PostgreSQL ile uyumlu ALTER TABLE kullanır."""
-    insp = inspect(engine)
-    # product_brand_models.season
-    if insp.has_table("product_brand_models"):
-        cols = {c["name"] for c in insp.get_columns("product_brand_models")}
-        if "season" not in cols:
-            with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE product_brand_models ADD COLUMN season VARCHAR(20)"))
+    Hem SQLite hem PostgreSQL ile uyumlu ALTER TABLE kullanır.
+    Yetki/izin hataları backend'i düşürmesin diye yutulur (log'a yazılır)."""
+    import logging
+    log = logging.getLogger("uvicorn.error")
+    try:
+        insp = inspect(engine)
+        # product_brand_models.season
+        if insp.has_table("product_brand_models"):
+            cols = {c["name"] for c in insp.get_columns("product_brand_models")}
+            if "season" not in cols:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(text(
+                            "ALTER TABLE product_brand_models ADD COLUMN season VARCHAR(20)"
+                        ))
+                    log.info("Migration: product_brand_models.season eklendi")
+                except Exception as e:
+                    log.warning(
+                        "Migration atlandi (season kolonu manuel eklenmeli): %s", e
+                    )
+    except Exception as e:
+        log.warning("ensure_schema hata verdi, atlandi: %s", e)
 
 _ensure_schema()
 
