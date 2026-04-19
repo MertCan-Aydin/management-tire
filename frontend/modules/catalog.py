@@ -85,6 +85,22 @@ class CatalogModule(BaseModule):
         self.model_note.setWordWrap(True)
         model_inner.addWidget(self.model_note)
 
+        # Mevsim filtresi (sadece Lastik tipinde görünür)
+        season_row = QHBoxLayout()
+        self.season_lbl = QLabel("Mevsim:")
+        self.season_lbl.setStyleSheet("font-size: 11px; border: none;")
+        self.season_combo = QComboBox()
+        self.season_combo.addItem("Tumu", None)
+        for s in ("Kislik", "Yazlik", "4 Mevsim"):
+            self.season_combo.addItem(s, s)
+        self.season_combo.currentIndexChanged.connect(self._on_season_changed)
+        season_row.addWidget(self.season_lbl)
+        season_row.addWidget(self.season_combo, 1)
+        self.season_row_widget = QWidget()
+        self.season_row_widget.setLayout(season_row)
+        self.season_row_widget.setVisible(False)
+        model_inner.addWidget(self.season_row_widget)
+
         self.model_list = QListWidget()
         model_inner.addWidget(self.model_list)
 
@@ -145,9 +161,11 @@ class CatalogModule(BaseModule):
         self.btn_add_brand.setEnabled(True)
         self._load_brands()
 
-        # Lastik ise model uyarısı
-        if self._selected_type_name == "Lastik":
-            self.model_note.setText("Lastik modeli serbest metin olduğundan burada yönetilmez.")
+        # Lastik ise mevsim filtresi görünür
+        is_tire = (self._selected_type_name == "Lastik")
+        self.season_row_widget.setVisible(is_tire)
+        if is_tire:
+            self.model_note.setText("Lastik modelleri mevsime göre eklenir (Kışlık/Yazlık/4 Mevsim).")
         else:
             self.model_note.setText("")
 
@@ -178,28 +196,32 @@ class CatalogModule(BaseModule):
         self.model_lbl.setText(f"{item.text()} modelleri")
         self.btn_del_brand.setEnabled(True)
 
-        # Lastik → model yok
-        if self._selected_type_name == "Lastik":
-            self.model_list.clear()
-            self.btn_add_model.setEnabled(False)
-            self.btn_del_model.setEnabled(False)
-        else:
-            self.btn_add_model.setEnabled(True)
-            self._load_models()
+        # Artik Lastik dahil tum tiplerde model secmeli
+        self.btn_add_model.setEnabled(True)
+        self._load_models()
 
     def _load_models(self):
         if not self._selected_brand_id: return
         try:
-            models = api.get_product_models(self._selected_brand_id)
+            is_tire = (self._selected_type_name == "Lastik")
+            season  = self.season_combo.currentData() if is_tire else None
+            models = api.get_product_models(self._selected_brand_id, season=season)
             self.model_list.clear()
             self.btn_del_model.setEnabled(False)
             for m in models:
-                item = QListWidgetItem(m["name"])
+                label = m["name"]
+                if is_tire and m.get("season"):
+                    label = f"[{m['season']}] {m['name']}"
+                item = QListWidgetItem(label)
                 item.setData(Qt.ItemDataRole.UserRole, m["id"])
                 self.model_list.addItem(item)
             self.model_list.itemClicked.connect(lambda: self.btn_del_model.setEnabled(True))
         except APIError as e:
             QMessageBox.critical(self, "Hata", str(e))
+
+    def _on_season_changed(self, _):
+        if self._selected_brand_id and self._selected_type_name == "Lastik":
+            self._load_models()
 
     # ── Tip işlemleri ─────────────────────────────────────────────────────────
     def _add_type(self):
@@ -251,10 +273,19 @@ class CatalogModule(BaseModule):
     # ── Model işlemleri ───────────────────────────────────────────────────────
     def _add_model(self):
         if not self._selected_brand_id: return
+        is_tire = (self._selected_type_name == "Lastik")
+        season  = None
+        if is_tire:
+            from PyQt6.QtWidgets import QInputDialog
+            options = ["Kislik", "Yazlik", "4 Mevsim"]
+            season, ok = QInputDialog.getItem(self, "Mevsim Secin",
+                                              "Bu model hangi mevsim icin?",
+                                              options, 0, False)
+            if not ok: return
         name, ok = self._ask("Yeni Model", "Model adi:")
         if not (ok and name): return
         try:
-            api.create_product_model(self._selected_brand_id, name)
+            api.create_product_model(self._selected_brand_id, name, season=season)
             self._load_models()
         except APIError as e:
             QMessageBox.critical(self, "Hata", str(e))

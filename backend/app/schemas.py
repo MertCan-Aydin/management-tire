@@ -66,11 +66,13 @@ class ProductBrandModelOut(BaseModel):
     id:       int
     brand_id: int
     name:     str
+    season:   Optional[str] = None
     class Config: from_attributes = True
 
 class ProductBrandModelCreate(BaseModel):
     brand_id: int
     name:     str
+    season:   Optional[str] = None
 
 # ── Product ───────────────────────────────────────────────────────────────────
 class ProductCreate(BaseModel):

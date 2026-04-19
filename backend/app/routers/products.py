@@ -346,14 +346,15 @@ def delete_brand(brand_id: int, db: Session = Depends(get_db)):
 # ── Modeller ──────────────────────────────────────────────────────────────────
 
 @router.get("/models", response_model=List[ProductBrandModelOut])
-def list_models(brand_id: int = None, db: Session = Depends(get_db)):
+def list_models(brand_id: int = None, season: str = None, db: Session = Depends(get_db)):
     q = db.query(ProductBrandModel)
     if brand_id: q = q.filter(ProductBrandModel.brand_id == brand_id)
+    if season:   q = q.filter(ProductBrandModel.season == season)
     return q.order_by(ProductBrandModel.name).all()
 
 @router.post("/models", response_model=ProductBrandModelOut, status_code=201)
 def create_model(data: ProductBrandModelCreate, db: Session = Depends(get_db)):
-    m = ProductBrandModel(brand_id=data.brand_id, name=data.name)
+    m = ProductBrandModel(brand_id=data.brand_id, name=data.name, season=data.season)
     db.add(m); db.commit(); db.refresh(m)
     return m
 

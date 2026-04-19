@@ -61,6 +61,8 @@ class ProductBrandModel(Base):
     id       = Column(Integer, primary_key=True, index=True)
     brand_id = Column(Integer, ForeignKey("product_brands.id"), nullable=False)
     name     = Column(String(100), nullable=False)
+    # Sadece Lastik tipindeki modeller için: "Kışlık" / "Yazlık" / "4 Mevsim"
+    season   = Column(String(20), nullable=True)
 
     brand = relationship("ProductBrand", back_populates="models")
 

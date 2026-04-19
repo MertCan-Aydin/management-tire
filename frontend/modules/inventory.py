@@ -42,13 +42,18 @@ class ProductDialog(QDialog):
         self.brand_combo.setEnabled(False)
         self.brand_combo.currentIndexChanged.connect(self._on_brand_changed)
 
-        # Model (lastik → yazılabilir, diğer → seçmeli)
+        # Mevsim (sadece Lastik tipinde gorunur)
+        self.season_combo = QComboBox()
+        self.season_combo.addItem("-- Mevsim Secin --", None)
+        for s in ("Kislik", "Yazlik", "4 Mevsim"):
+            self.season_combo.addItem(s, s)
+        self.season_combo.setEnabled(False)
+        self.season_combo.currentIndexChanged.connect(self._on_season_changed)
+
+        # Model (secmeli combo)
         self.model_combo = QComboBox()
         self.model_combo.addItem("-- Model Secin --", None)
         self.model_combo.setEnabled(False)
-        self.model_input = QLineEdit()
-        self.model_input.setPlaceholderText("Lastik modeli (205/55R16 vb.)")
-        self.model_input.setVisible(False)
 
         # Tedarikçi
         self.supplier_combo = QComboBox()
@@ -60,11 +65,12 @@ class ProductDialog(QDialog):
         layout.addRow("Aciklama:", self.desc_input)
         layout.addRow("Urun Tipi:", self.type_combo)
         layout.addRow("Marka:", self.brand_combo)
+        self.season_row_lbl = QLabel("Mevsim:")
+        layout.addRow(self.season_row_lbl, self.season_combo)
+        self.season_row_lbl.setVisible(False)
+        self.season_combo.setVisible(False)
         self.model_row_combo = QLabel("Model:")
         layout.addRow(self.model_row_combo, self.model_combo)
-        self.model_row_input = QLabel("Model (yaziniz):")
-        layout.addRow(self.model_row_input, self.model_input)
-        self.model_row_input.setVisible(False)
         layout.addRow("Alis / Maliyet:", self.cost_input)
         layout.addRow("Baslangic Stok:", self.stock_input)
         layout.addRow("Tedarikci:", self.supplier_combo)
@@ -87,14 +93,22 @@ class ProductDialog(QDialog):
             self.stock_input.setValue(product.get("stock", 0))
             idx = self.supplier_combo.findData(product.get("supplier_id"))
             if idx >= 0: self.supplier_combo.setCurrentIndex(idx)
-            # Tip/marka/model sonradan doldurulacak (combo yüklendikten sonra)
-            self._prefill_type = product.get("product_type_id")
+            # Tip/marka/mevsim/model sonradan doldurulacak (combo yüklendikten sonra)
+            self._prefill_type  = product.get("product_type_id")
             self._prefill_brand = product.get("brand_id")
-            self._prefill_model_id = None  # model combo'da yok, text var
             self._prefill_model_text = product.get("brand_model") or ""
+            # brand_model string'inden mevsim prefix'ini ayikla: "[Kislik] Blizzak LM005"
+            self._prefill_season = None
+            txt = self._prefill_model_text
+            if txt.startswith("["):
+                end = txt.find("]")
+                if end > 0:
+                    self._prefill_season = txt[1:end].strip()
+                    self._prefill_model_text = txt[end+1:].strip()
         else:
             self._prefill_type  = None
             self._prefill_brand = None
+            self._prefill_season = None
             self._prefill_model_text = ""
 
         # Tipleri yükle
@@ -122,11 +136,16 @@ class ProductDialog(QDialog):
         self.model_combo.clear()
         self.model_combo.addItem("-- Model Secin --", None)
         self.model_combo.setEnabled(False)
-        self.model_input.clear()
+
+        # Mevsim satiri sadece Lastik tipinde
+        is_tire = (self.type_combo.currentText() == "Lastik")
+        self.season_row_lbl.setVisible(is_tire)
+        self.season_combo.setVisible(is_tire)
+        self.season_combo.setEnabled(False)
+        self.season_combo.setCurrentIndex(0)
 
         if not type_id:
             self.brand_combo.setEnabled(False)
-            self._set_model_mode(None)
             return
 
         self.brand_combo.setEnabled(True)
@@ -137,10 +156,6 @@ class ProductDialog(QDialog):
         except APIError:
             pass
 
-        # Lastik mi → serbest model, değilse seçmeli
-        type_name = self.type_combo.currentText()
-        self._set_model_mode(type_name)
-
         # Prefill marka
         if self._prefill_brand:
             idx = self.brand_combo.findData(self._prefill_brand)
@@ -150,26 +165,49 @@ class ProductDialog(QDialog):
 
     def _on_brand_changed(self, _):
         brand_id  = self.brand_combo.currentData()
-        type_name = self.type_combo.currentText()
+        is_tire   = (self.type_combo.currentText() == "Lastik")
         self.model_combo.clear()
         self.model_combo.addItem("-- Model Secin --", None)
 
         if not brand_id:
             self.model_combo.setEnabled(False)
+            self.season_combo.setEnabled(False)
             return
 
-        # Lastik → serbest metin, model combo kapalı
-        if type_name == "Lastik":
+        if is_tire:
+            # Lastik: once mevsim secilmeli, sonra modeller yuklenir
+            self.season_combo.setEnabled(True)
             self.model_combo.setEnabled(False)
-            if self._prefill_model_text:
-                self.model_input.setText(self._prefill_model_text)
-                self._prefill_model_text = ""
-            return
+            # Prefill mevsim
+            if self._prefill_season:
+                idx = self.season_combo.findData(self._prefill_season)
+                if idx >= 0:
+                    self.season_combo.setCurrentIndex(idx)
+                self._prefill_season = None
+        else:
+            # Diger tiplerde modelleri direkt yukle
+            self.season_combo.setEnabled(False)
+            self.model_combo.setEnabled(True)
+            self._load_models(brand_id, season=None)
 
-        # Diğer tiplerde modelleri yükle
+    def _on_season_changed(self, _):
+        if self.type_combo.currentText() != "Lastik":
+            return
+        brand_id = self.brand_combo.currentData()
+        season   = self.season_combo.currentData()
+        if not (brand_id and season):
+            self.model_combo.clear()
+            self.model_combo.addItem("-- Model Secin --", None)
+            self.model_combo.setEnabled(False)
+            return
         self.model_combo.setEnabled(True)
+        self._load_models(brand_id, season=season)
+
+    def _load_models(self, brand_id, season=None):
+        self.model_combo.clear()
+        self.model_combo.addItem("-- Model Secin --", None)
         try:
-            models = api.get_product_models(brand_id)
+            models = api.get_product_models(brand_id, season=season)
             for m in models:
                 self.model_combo.addItem(m["name"], m["id"])
             if self._prefill_model_text:
@@ -180,23 +218,16 @@ class ProductDialog(QDialog):
         except APIError:
             pass
 
-    def _set_model_mode(self, type_name):
-        is_tire = (type_name == "Lastik")
-        # Lastik: yazılabilir input, combo gizli
-        self.model_input.setVisible(is_tire)
-        self.model_row_input.setVisible(is_tire)
-        self.model_combo.setVisible(not is_tire)
-        self.model_row_combo.setVisible(not is_tire)
-
     def get_data(self):
-        type_name   = self.type_combo.currentText()
+        is_tire = (self.type_combo.currentText() == "Lastik")
         brand_model = None
-        if type_name == "Lastik":
-            brand_model = self.model_input.text().strip() or None
-        else:
-            # Seçmeli modelden metin al
-            if self.model_combo.currentData():
-                brand_model = self.model_combo.currentText()
+        if self.model_combo.currentData():
+            model_name = self.model_combo.currentText()
+            if is_tire:
+                season = self.season_combo.currentData()
+                brand_model = f"[{season}] {model_name}" if season else model_name
+            else:
+                brand_model = model_name
 
         return {
             "name":            self.name_input.text().strip(),

@@ -212,12 +212,17 @@ class APIClient:
     def delete_product_brand(self, brand_id):
         return self.delete(f"/api/products/brands/{brand_id}")
 
-    def get_product_models(self, brand_id=None):
+    def get_product_models(self, brand_id=None, season=None):
+        params = []
+        if brand_id: params.append(f"brand_id={brand_id}")
+        if season:   params.append(f"season={season}")
         url = "/api/products/models"
-        if brand_id: url += f"?brand_id={brand_id}"
+        if params: url += "?" + "&".join(params)
         return self.get(url)
-    def create_product_model(self, brand_id, name):
-        return self.post("/api/products/models", {"brand_id": brand_id, "name": name})
+    def create_product_model(self, brand_id, name, season=None):
+        payload = {"brand_id": brand_id, "name": name}
+        if season: payload["season"] = season
+        return self.post("/api/products/models", payload)
     def delete_product_model(self, model_id):
         return self.delete(f"/api/products/models/{model_id}")
 

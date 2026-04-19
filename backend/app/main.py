@@ -1,11 +1,26 @@
 from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security.api_key import APIKeyHeader
+from sqlalchemy import inspect, text
 from app.database import engine, Base
 from app.config import settings
 from app.routers import suppliers, products, customers, sales, purchases, expenses, reports, dashboard, auth
 
 Base.metadata.create_all(bind=engine)
+
+
+def _ensure_schema():
+    """Basit runtime migration — yeni kolonlar eksikse ekler.
+    Hem SQLite hem PostgreSQL ile uyumlu ALTER TABLE kullanır."""
+    insp = inspect(engine)
+    # product_brand_models.season
+    if insp.has_table("product_brand_models"):
+        cols = {c["name"] for c in insp.get_columns("product_brand_models")}
+        if "season" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE product_brand_models ADD COLUMN season VARCHAR(20)"))
+
+_ensure_schema()
 
 app = FastAPI(docs_url=None, redoc_url=None)
 

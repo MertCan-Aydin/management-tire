@@ -88,8 +88,11 @@ def T(key):
 
 def build_stylesheet():
     t = THEMES[_current_theme]
+    # Açık temada input arka planı biraz daha koyu olsun ki kenarlar belirginleşsin
+    input_bg     = "#ffffff" if _current_theme == "light" else t['bg_input']
+    input_border = t['divider']
     return f"""
-        * {{ border: none; outline: none; }}
+        QWidget {{ outline: none; }}
         QMainWindow, QWidget {{
             background-color: {t['bg_app']};
             color: {t['text_main']};
@@ -100,33 +103,87 @@ def build_stylesheet():
         QDialog     {{ background-color: {t['bg_sidebar']}; }}
         QMessageBox {{ background-color: {t['bg_sidebar']}; }}
 
-        QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
-            background-color: {t['bg_input']};
+        /* ── Form girişleri — belirgin kenar ve focus highlight ─────────── */
+        QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit, QPlainTextEdit, QDateEdit, QTimeEdit {{
+            background-color: {input_bg};
             color: {t['text_main']};
-            border: none;
-            padding: 8px 10px;
-            border-radius: 4px;
+            border: 1px solid {input_border};
+            padding: 7px 10px;
+            border-radius: 6px;
             font-size: 14px;
+            min-height: 20px;
+            selection-background-color: {t['accent']};
+            selection-color: #ffffff;
         }}
-        QComboBox::drop-down {{ border: none; width: 24px; }}
+        QLineEdit:hover, QSpinBox:hover, QDoubleSpinBox:hover, QComboBox:hover,
+        QTextEdit:hover, QPlainTextEdit:hover {{
+            border: 1px solid {t['text_hint']};
+        }}
+        QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus,
+        QTextEdit:focus, QPlainTextEdit:focus, QDateEdit:focus, QTimeEdit:focus {{
+            border: 1px solid {t['accent']};
+        }}
+        QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {{
+            background-color: {t['bg_app']};
+            color: {t['text_hint']};
+            border: 1px solid {t['divider']};
+        }}
+        QLineEdit[placeholder] {{ color: {t['text_hint']}; }}
+
+        QComboBox::drop-down {{ border: none; width: 26px; subcontrol-position: right center; }}
+        QComboBox::down-arrow {{
+            width: 10px; height: 10px;
+        }}
         QComboBox QAbstractItemView {{
-            background: {t['bg_sidebar']};
+            background: {input_bg};
             color: {t['text_main']};
             border: 1px solid {t['divider']};
-            selection-background-color: {t['bg_active']};
+            selection-background-color: {t['accent']};
+            selection-color: #ffffff;
+            padding: 4px;
+            outline: none;
         }}
+        QSpinBox::up-button, QDoubleSpinBox::up-button,
+        QSpinBox::down-button, QDoubleSpinBox::down-button {{
+            background: transparent; border: none; width: 16px;
+        }}
+
+        /* ── FormLayout label'ları daha belirgin ─────────────────────────── */
+        QFormLayout QLabel {{ color: {t['text_sub']}; font-weight: 600; font-size: 13px; }}
 
         QPushButton {{
             background-color: {t['accent']};
             color: #ffffff;
             border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: 500;
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-weight: 600;
             font-size: 14px;
+            min-height: 20px;
         }}
         QPushButton:hover   {{ background-color: {t['accent_h']}; }}
         QPushButton:pressed {{ background-color: {t['accent_h']}; }}
+        QPushButton:disabled {{
+            background-color: {t['bg_active']};
+            color: {t['text_hint']};
+        }}
+
+        /* ── GroupBox / Frame kenar belirginliği ──────────────────────── */
+        QGroupBox {{
+            border: 1px solid {t['divider']};
+            border-radius: 8px;
+            margin-top: 14px;
+            padding: 10px;
+            font-weight: 600;
+            color: {t['text_sub']};
+        }}
+        QGroupBox::title {{
+            subcontrol-origin: margin;
+            left: 12px;
+            padding: 0 6px;
+            background-color: {t['bg_sidebar']};
+        }}
+        QCheckBox, QRadioButton {{ color: {t['text_main']}; spacing: 6px; }}
 
         QTableWidget {{
             background-color: {t['table_bg']};
@@ -428,8 +485,14 @@ class MainWindow(QMainWindow):
     def __init__(self, username=""):
         super().__init__()
         self.setWindowTitle(Config.APP_NAME)
-        self.setGeometry(100, 100, 1280, 800)
-        self.setMinimumSize(1024, 680)
+        # Ekran boyutuna gore otomatik boyutlandirma
+        screen = QApplication.primaryScreen().availableGeometry()
+        w = int(screen.width()  * 0.82)
+        h = int(screen.height() * 0.85)
+        x = screen.x() + (screen.width()  - w) // 2
+        y = screen.y() + (screen.height() - h) // 2
+        self.setGeometry(x, y, w, h)
+        self.setMinimumSize(960, 620)
         self._nav_btns          = []   # [(idx, NavButton)]
         self._settings_visible  = False
 
@@ -448,7 +511,10 @@ class MainWindow(QMainWindow):
     # ── Sidebar ───────────────────────────────────────────────────────────────
     def _build_sidebar(self):
         self.sidebar = QWidget()
-        self.sidebar.setFixedWidth(230)
+        # Ekran genisligine gore sidebar
+        screen_w = QApplication.primaryScreen().availableGeometry().width()
+        sb_w = 210 if screen_w < 1400 else 240
+        self.sidebar.setFixedWidth(sb_w)
         self.sidebar.setStyleSheet(f"background-color: {T('bg_sidebar')}; border: none;")
 
         lay = QVBoxLayout(self.sidebar)
@@ -700,6 +766,16 @@ class MainWindow(QMainWindow):
 # ── Başlat ────────────────────────────────────────────────────────────────────
 def main():
     app = QApplication(sys.argv)
+
+    # Ekran boyutuna gore global font boyutunu olcekle
+    screen = app.primaryScreen().availableGeometry()
+    base_font = QFont("Segoe UI")
+    if   screen.height() >= 1400: base_font.setPointSize(12)
+    elif screen.height() >= 1080: base_font.setPointSize(10)
+    elif screen.height() >= 900:  base_font.setPointSize(9)
+    else:                          base_font.setPointSize(9)
+    app.setFont(base_font)
+
     app.setStyleSheet(build_stylesheet())
 
     from api_client import api, APIError
