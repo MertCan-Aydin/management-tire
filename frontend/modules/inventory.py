@@ -79,9 +79,6 @@ class ProductDialog(QDialog):
         btn_layout.addWidget(cancel_btn)
         layout.addRow(btn_layout)
 
-        # Tipleri yükle
-        self._load_types()
-
         # Düzenleme modunda mevcut değerleri doldur
         if product:
             self.name_input.setText(product.get("name", ""))
@@ -99,6 +96,9 @@ class ProductDialog(QDialog):
             self._prefill_type  = None
             self._prefill_brand = None
             self._prefill_model_text = ""
+
+        # Tipleri yükle
+        self._load_types()
 
     def _load_types(self):
         try:
