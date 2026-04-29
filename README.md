@@ -1,97 +1,41 @@
-# Management Panel — Deployment Rehberi
+# Dijital Lastik Servisi Yönetim Sistemi
+
+Lastik satış ve servis işletmesi için masaüstü + mobil yönetim sistemi.
+
+## Modüller
+
+- Ürün kataloğu & stok yönetimi (QR/barkod ile)
+- Tedarikçi & borç takibi
+- Alım yönetimi
+- Müşteri & satış
+- Tamir / servis hizmeti
+- Gider takibi
+- Günlük / haftalık / aylık raporlar
 
 ## Mimari
 
-```
-[Windows/Mac — PyQt6 Masaüstü]
-        |  HTTP (requests)
-        v
-[Ubuntu VPS — FastAPI + PostgreSQL]
-  http://VPS_IP:8000/api/...
-  http://VPS_IP:8000/docs   ← Swagger UI
-```
+Bkz. [docs/architecture.md](docs/architecture.md)
 
----
+## Kurulum
 
-## 1. VPS'e Backend Kurulumu (Tek Komut)
-
+### VPS (ilk kurulum)
 ```bash
-# Dosyaları VPS'e aktar
-scp -r backend/ root@VPS_IP:/tmp/backend/
-scp setup_vps.sh root@VPS_IP:/tmp/
-
-# VPS'te şifreyi değiştir ve çalıştır
-ssh root@VPS_IP
-nano /tmp/setup_vps.sh   # DB_PASS satırını güncelle
-sudo bash /tmp/setup_vps.sh
+bash deploy/scripts/setup_vps.sh
 ```
 
-Script şunları otomatik yapar:
-- PostgreSQL kurar, veritabanı ve kullanıcı oluşturur
-- Python venv + bağımlılıkları yükler
-- Systemd servisi kurar ve başlatır (reboot'ta otomatik başlar)
-
----
-
-## 2. Doğrulama
-
+### Güncelleme
 ```bash
-# API çalışıyor mu?
-curl http://VPS_IP:8000/
-# {"status": "ok"}
-
-# Swagger dokümantasyonu (tarayıcıdan):
-http://VPS_IP:8000/docs
+bash deploy/scripts/deploy.sh
 ```
 
----
-
-## 3. Frontend Kurulumu (Windows/Mac)
-
+### Yerel Geliştirme (Backend)
 ```bash
-cd frontend/
+cd backend
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-
-# config.py'yi düzenle:
-# API_BASE_URL = "http://VPS_IP:8000"
-
-python main.py
+cp .env.example .env            # .env'i düzenle
+uvicorn app.main:app --reload
 ```
 
----
-
-## 4. Mevcut Veri Taşıma (SQLite → PostgreSQL)
-
-```bash
-# scripts/migrate_sqlite_to_postgres.py kullanın
-# Önce management.db dosyasını VPS'e kopyalayın:
-scp management.db root@VPS_IP:/tmp/
-
-ssh root@VPS_IP
-cd /opt/management_panel
-source venv/bin/activate
-python /tmp/scripts/migrate_sqlite_to_postgres.py /tmp/management.db
-```
-
----
-
-## 5. Servis Yönetimi
-
-```bash
-systemctl status management-panel    # Durum
-systemctl restart management-panel   # Yeniden başlat
-journalctl -u management-panel -f    # Canlı loglar
-```
-
----
-
-## 6. Güvenlik
-
-```bash
-# Sadece belirli IP'ye izin ver
-ufw allow from OFIS_IP to any port 8000
-ufw deny 8000
-
-# HTTPS için Nginx + Certbot (önerilen):
-apt install nginx certbot python3-certbot-nginx
-```
+API dökümantasyonu: `http://localhost:8000/docs`
