@@ -127,6 +127,22 @@ def login(kullanici_adi: str, parola: str) -> dict:
     return _handle_response(resp)
 
 
+def pin_login(pin: str) -> dict:
+    """Sadece PIN ile giriş yap."""
+    return post("/api/auth/pin-giris", json={"pin": pin})
+
+
+def get_setup_status() -> bool:
+    """Sistemin kurulu olup olmadığını (admin var mı) kontrol et."""
+    data = get("/api/auth/setup-durumu")
+    return data.get("kurulu_mu", False)
+
+
+def setup_pin(pin: str) -> dict:
+    """İlk PIN kurulumunu yap."""
+    return post("/api/auth/pin-kurulum", json={"pin": pin})
+
+
 def logout(raw_refresh: str) -> None:
     try:
         _request("POST", "/api/auth/cikis", json={"refresh_token": raw_refresh}, retry_auth=False)

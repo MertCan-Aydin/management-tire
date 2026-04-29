@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REPO_DIR="/opt/management-tire"
+REPO_DIR="/opt/repo"
 SERVICE="management-tire-api"
 
 echo "=== [1/5] Güncelleme alınıyor ==="

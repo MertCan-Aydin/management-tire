@@ -18,7 +18,7 @@ fail() { echo -e "${RED}  ✗ HATA: $1${NC}"; exit 1; }
 
 # ── Sabitler (değiştirme) ────────────────────────────────────
 REPO_URL="https://github.com/MertCan-Aydin/management-tire.git"
-REPO_DIR="/opt/management-tire"
+REPO_DIR="/opt/repo"
 SERVICE="management-tire-api"
 APP_USER="mgmttire"
 DB_NAME="DijitalLastikServisiDB"

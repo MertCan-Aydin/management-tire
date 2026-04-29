@@ -3,6 +3,11 @@ from datetime import datetime
 from ..core.db import call_sp, call_sp_one
 
 
+def admin_kullanici_getir(cursor) -> dict | None:
+    """PIN login için — sistemdeki tek admin kullanıcıyı döner."""
+    return call_sp_one(cursor, "sp_admin_kullanici_getir")
+
+
 def kullanici_adi_ile_getir(cursor, kullanici_adi: str) -> dict | None:
     return call_sp_one(cursor, "sp_kullanici_adi_ile_getir", [kullanici_adi])
 

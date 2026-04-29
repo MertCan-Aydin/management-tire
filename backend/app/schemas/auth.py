@@ -35,6 +35,20 @@ class ParolaDegistirRequest(BaseModel):
         return v
 
 
+class PinLoginRequest(BaseModel):
+    pin: str
+
+    @field_validator("pin")
+    @classmethod
+    def pin_kontrol(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit():
+            raise ValueError("PIN yalnızca rakamlardan oluşmalıdır")
+        if len(v) != 4:
+            raise ValueError("PIN 4 haneli olmalıdır")
+        return v
+
+
 class KullaniciBilgi(BaseModel):
     id: int
     kullanici_adi: str
