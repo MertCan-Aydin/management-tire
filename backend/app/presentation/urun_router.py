@@ -7,6 +7,7 @@ from ..business import urun_service
 from ..schemas.urun import (
     UrunEkleRequest, UrunGuncelleRequest, UrunListeFiltre,
     UrunTipiEkleRequest, MarkaEkleRequest, ModelEkleRequest,
+    EprelKaydetRequest, EprelKaydetResponse,
 )
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -115,6 +116,13 @@ def urunler_listele(
     )
     with get_cursor() as (cursor, _):
         return urun_service.urunleri_listele(cursor, filtre)
+
+
+@router.post("/eprel-kaydet", response_model=EprelKaydetResponse)
+def eprel_kaydet(body: EprelKaydetRequest):
+    """EPREL QR'dan ürünü bul veya oluştur (tip→marka→model→ürün hiyerarşisi)."""
+    with get_cursor() as (cursor, _):
+        return urun_service.eprel_kaydet(cursor, body)
 
 
 @router.get("/barkod/{barkod}")

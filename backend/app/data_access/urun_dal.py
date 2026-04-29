@@ -111,3 +111,24 @@ def urun_guncelle(cursor, urun_id: int, data: dict) -> None:
 
 def urun_sil(cursor, urun_id: int) -> None:
     call_sp(cursor, "sp_urunler_sil", [urun_id])
+
+
+# --- EPREL entegrasyonu ---
+
+def urun_tipi_bul_veya_olustur(cursor, ad: str) -> int:
+    row = call_sp_one(cursor, "sp_urun_tipi_bul_veya_olustur", [ad])
+    return row["id"]
+
+
+def urun_markasi_bul_veya_olustur(cursor, tipi_id: int, ad: str) -> int:
+    row = call_sp_one(cursor, "sp_urun_markasi_bul_veya_olustur", [tipi_id, ad])
+    return row["id"]
+
+
+def urun_modeli_bul_veya_olustur(cursor, marka_id: int, ad: str, mevsim: str) -> int:
+    row = call_sp_one(cursor, "sp_urun_modeli_bul_veya_olustur", [marka_id, ad, mevsim])
+    return row["id"]
+
+
+def urun_eprel_bul(cursor, eprel_no: str) -> dict | None:
+    return call_sp_one(cursor, "sp_urun_eprel_bul", [eprel_no])

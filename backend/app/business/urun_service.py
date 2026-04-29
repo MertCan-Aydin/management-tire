@@ -97,6 +97,52 @@ def urun_sil(cursor, urun_id: int) -> None:
     urun_dal.urun_sil(cursor, urun_id)
 
 
+# --- EPREL entegrasyonu ---
+
+def eprel_kaydet(cursor, req) -> dict:
+    """
+    EPREL QR'dan gelen ürünü veritabanında bul veya oluştur.
+    Tip → Marka → Model → Ürün hiyerarşisini otomatik oluşturur.
+    """
+    mevcut = urun_dal.urun_eprel_bul(cursor, req.eprel_no)
+    if mevcut:
+        return {
+            "urun_id": mevcut["id"],
+            "urun_ad": mevcut["ad"],
+            "yeni_mi": False,
+            "satis_fiyati": float(mevcut.get("satis_fiyati") or 0),
+            "maliyet_fiyati": float(mevcut.get("maliyet_fiyati") or 0),
+        }
+
+    tip_id = urun_dal.urun_tipi_bul_veya_olustur(cursor, "Lastik")
+    marka_id = urun_dal.urun_markasi_bul_veya_olustur(cursor, tip_id, req.marka)
+    model_id = urun_dal.urun_modeli_bul_veya_olustur(cursor, marka_id, req.model, req.mevsim)
+
+    urun_ad = f"{req.marka} {req.model} {req.ebat}"
+    satis_f = req.satis_fiyati if req.satis_fiyati > 0 else 0.01
+    urun_id = urun_dal.urun_ekle(cursor, {
+        "barkod_qr": req.eprel_no,
+        "ad": urun_ad,
+        "ebat": req.ebat,
+        "aciklama": None,
+        "satis_fiyati": satis_f,
+        "maliyet_fiyati": req.maliyet_fiyati,
+        "stok": 0,
+        "fiziksel_urun_mu": True,
+        "resim_yolu": None,
+        "urun_tipi_id": tip_id,
+        "marka_id": marka_id,
+        "marka_modeli_id": model_id,
+    })
+    return {
+        "urun_id": urun_id,
+        "urun_ad": urun_ad,
+        "yeni_mi": True,
+        "satis_fiyati": satis_f,
+        "maliyet_fiyati": req.maliyet_fiyati,
+    }
+
+
 # --- Guard yardımcılar ---
 
 def _tip_varmi(cursor, tip_id: int):

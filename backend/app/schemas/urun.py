@@ -69,3 +69,28 @@ class ModelEkleRequest(BaseModel):
         if v and v not in ("Yaz", "Kış", "Dört Mevsim"):
             raise ValueError("Mevsim: Yaz, Kış veya Dört Mevsim olmalıdır")
         return v
+
+
+class EprelKaydetRequest(BaseModel):
+    eprel_no: str
+    marka: str
+    model: str
+    ebat: str
+    mevsim: str
+    satis_fiyati: float = 0.0
+    maliyet_fiyati: float = 0.0
+
+    @field_validator("mevsim")
+    @classmethod
+    def mevsim_kontrol(cls, v: str) -> str:
+        if v not in ("Yaz", "Kış", "Dört Mevsim"):
+            raise ValueError("Mevsim: Yaz, Kış veya Dört Mevsim olmalıdır")
+        return v
+
+
+class EprelKaydetResponse(BaseModel):
+    urun_id: int
+    urun_ad: str
+    yeni_mi: bool
+    satis_fiyati: float
+    maliyet_fiyati: float
