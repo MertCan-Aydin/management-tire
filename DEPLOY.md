@@ -128,15 +128,15 @@ mysql -u root -p DijitalLastikServisiDB < db/migrations/004_indexes.sql
 
 ---
 
-## 6. İlk Admin Kullanıcı
+## 6. PIN Kurulumu (Yeni Sistem)
+
+Artık manuel admin oluşturmanıza gerek yok. Uygulama ilk açıldığında sizi PIN kurulum ekranına yönlendirecektir.
+
+**ÖNEMLİ:** Eğer veritabanında daha önceden oluşturulmuş bir admin varsa, kurulum ekranı gelmez. Sistemi sıfırlamak veya PIN moduna geçmek için veritabanındaki eski kullanıcıları temizlemeniz önerilir:
 
 ```bash
-cd /opt/management-tire/backend
-source .venv/bin/activate
-python -m scripts.create_admin
+mysql -u root -p DijitalLastikServisiDB -e "DELETE FROM refresh_tokenlar; DELETE FROM kullanicilar;"
 ```
-
-Kullanıcı adı ve şifre gir. **Şifreyi not et.**
 
 ---
 
