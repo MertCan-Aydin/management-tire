@@ -1,9 +1,10 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QMessageBox, QFrame,
+    QWidget, QVBoxLayout, QLabel,
+    QLineEdit, QPushButton, QFrame,
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 from ..core import api_client
 from ..core.token_store import save_tokens
@@ -57,77 +58,114 @@ class LoginView(QWidget):
         self._check_setup()
 
     def _build_ui(self):
-        self.setWindowTitle("Dijital Lastik Servisi - Giriş")
-        self.setFixedSize(380, 350)
+        self.setWindowTitle("Dijital Lastik Servisi")
+        self.setFixedSize(420, 520)
+        self.setStyleSheet("background:#f7f9fb;")
 
-        self.root = QVBoxLayout(self)
-        self.root.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.root.setSpacing(15)
-        self.root.setContentsMargins(40, 40, 40, 40)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.baslik = QLabel("Dijital Lastik Servisi")
-        self.baslik.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
-        self.baslik.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.root.addWidget(self.baslik)
+        # Merkezi kart
+        kart = QFrame()
+        kart.setFixedWidth(360)
+        kart.setStyleSheet("""
+            QFrame {
+                background: #ffffff;
+                border-radius: 16px;
+                border: 1px solid #e0e3e5;
+            }
+        """)
+        eff = QGraphicsDropShadowEffect()
+        eff.setBlurRadius(32)
+        eff.setOffset(0, 6)
+        c = QColor("#003d9b")
+        c.setAlpha(20)
+        eff.setColor(c)
+        kart.setGraphicsEffect(eff)
 
-        self.alt_baslik = QLabel("Lütfen PIN kodunuzu girin")
-        self.alt_baslik.setStyleSheet("color: #7f8c8d;")
+        kart_layout = QVBoxLayout(kart)
+        kart_layout.setContentsMargins(36, 36, 36, 36)
+        kart_layout.setSpacing(14)
+        kart_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Logo
+        logo = QLabel("🔧")
+        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        logo.setStyleSheet(
+            "font-size:38px; background:#eef2ff; border-radius:14px;"
+            "padding:10px 0; border:none;"
+        )
+        logo.setFixedHeight(68)
+        kart_layout.addWidget(logo)
+
+        # Başlık
+        self.baslik_lbl = QLabel("Hoş Geldiniz")
+        self.baslik_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.baslik_lbl.setFont(QFont("Inter", 17, QFont.Weight.Bold))
+        self.baslik_lbl.setStyleSheet(
+            "color:#191c1e; border:none; background:transparent;")
+        kart_layout.addWidget(self.baslik_lbl)
+
+        self.alt_baslik = QLabel("PIN kodunuzu girin")
         self.alt_baslik.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.root.addWidget(self.alt_baslik)
+        self.alt_baslik.setStyleSheet(
+            "color:#505f76; font-size:13px; border:none; background:transparent;")
+        kart_layout.addWidget(self.alt_baslik)
 
-        self.root.addSpacing(10)
-
-        # PIN Giriş Alanı
+        # PIN giriş
         self._pin_input = QLineEdit()
-        self._pin_input.setPlaceholderText("PIN (4 Hane)")
+        self._pin_input.setPlaceholderText("• • • •")
         self._pin_input.setEchoMode(QLineEdit.EchoMode.Password)
         self._pin_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._pin_input.setMinimumHeight(45)
         self._pin_input.setMaxLength(4)
-        self._pin_input.setFont(QFont("Segoe UI", 14))
+        self._pin_input.setFixedHeight(50)
+        self._pin_input.setFont(QFont("Inter", 20))
         self._pin_input.returnPressed.connect(self._giris)
-        self.root.addWidget(self._pin_input)
+        kart_layout.addWidget(self._pin_input)
 
-        # PIN Tekrar (Sadece kurulum modunda görünür)
+        # PIN tekrar
         self._pin_tekrar_input = QLineEdit()
         self._pin_tekrar_input.setPlaceholderText("PIN Tekrar")
         self._pin_tekrar_input.setEchoMode(QLineEdit.EchoMode.Password)
         self._pin_tekrar_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._pin_tekrar_input.setMinimumHeight(45)
         self._pin_tekrar_input.setMaxLength(4)
-        self._pin_tekrar_input.setFont(QFont("Segoe UI", 14))
+        self._pin_tekrar_input.setFixedHeight(44)
+        self._pin_tekrar_input.setFont(QFont("Inter", 16))
         self._pin_tekrar_input.setVisible(False)
-        self.root.addWidget(self._pin_tekrar_input)
+        kart_layout.addWidget(self._pin_tekrar_input)
 
+        # Giriş butonu
         self._giris_btn = QPushButton("Giriş Yap")
-        self._giris_btn.setMinimumHeight(45)
-        self._giris_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2c3e50;
-                color: white;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #34495e;
-            }
-            QPushButton:disabled {
-                background-color: #95a5a6;
-            }
-        """)
+        self._giris_btn.setFixedHeight(46)
+        self._giris_btn.setFont(QFont("Inter", 13, QFont.Weight.Bold))
         self._giris_btn.clicked.connect(self._giris)
-        self.root.addWidget(self._giris_btn)
+        kart_layout.addWidget(self._giris_btn)
 
+        # Hata etiketi
         self._hata_label = QLabel("")
-        self._hata_label.setStyleSheet("color: #e74c3c;")
         self._hata_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._hata_label.setWordWrap(True)
-        self.root.addWidget(self._hata_label)
+        self._hata_label.setStyleSheet(
+            "color:#dc2626; background:#fee2e2; border-radius:8px;"
+            "padding:8px; font-size:12px; border:none;"
+        )
+        self._hata_label.hide()
+        kart_layout.addWidget(self._hata_label)
+
+        outer.addWidget(kart, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        alt = QLabel("Dijital Lastik Servisi")
+        alt.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        alt.setStyleSheet(
+            "color:#737685; font-size:11px; background:transparent; border:none;")
+        outer.addWidget(alt)
 
     def _check_setup(self):
         self._pin_input.setEnabled(False)
         self._giris_btn.setEnabled(False)
-        self._hata_label.setText("Sistem durumu kontrol ediliyor...")
+        self._hata_label.hide()
+        self.alt_baslik.setText("Sistem durumu kontrol ediliyor…")
 
         self._setup_worker = _SetupCheckWorker()
         self._setup_worker.sonuc.connect(self._on_setup_check_success)
@@ -137,25 +175,28 @@ class LoginView(QWidget):
     def _on_setup_check_success(self, kurulu_mu: bool):
         self._pin_input.setEnabled(True)
         self._giris_btn.setEnabled(True)
-        self._hata_label.setText("")
+        self._hata_label.hide()
 
         if not kurulu_mu:
             self._is_setup_mode = True
-            self.alt_baslik.setText("İlk Kurulum: Yeni PIN oluşturun")
+            self.baslik_lbl.setText("İlk Kurulum")
+            self.alt_baslik.setText("4 haneli yeni PIN belirleyin")
             self._pin_tekrar_input.setVisible(True)
-            self._giris_btn.setText("PIN Oluştur ve Giriş Yap")
-            self.setFixedSize(380, 420)
+            self._giris_btn.setText("PIN Oluştur")
+            self.setFixedSize(420, 580)
         else:
             self._is_setup_mode = False
-            self.alt_baslik.setText("Hoş geldiniz, PIN kodunuzu girin")
+            self.baslik_lbl.setText("Hoş Geldiniz")
+            self.alt_baslik.setText("PIN kodunuzu girin")
             self._pin_tekrar_input.setVisible(False)
             self._giris_btn.setText("Giriş Yap")
-            self.setFixedSize(380, 350)
-        
+            self.setFixedSize(420, 520)
+
         self._pin_input.setFocus()
 
     def _on_setup_check_error(self, mesaj: str):
         self._hata_label.setText(f"Bağlantı hatası: {mesaj}")
+        self._hata_label.show()
         self._giris_btn.setText("Tekrar Dene")
         self._giris_btn.setEnabled(True)
         self._giris_btn.clicked.disconnect()
@@ -163,20 +204,22 @@ class LoginView(QWidget):
 
     def _giris(self):
         pin = self._pin_input.text().strip()
-        
+
         if not pin or len(pin) != 4 or not pin.isdigit():
-            self._hata_label.setText("Lütfen 4 haneli bir PIN girin.")
+            self._hata_label.setText("Lütfen 4 haneli sayısal bir PIN girin.")
+            self._hata_label.show()
             return
 
         if self._is_setup_mode:
             pin_tekrar = self._pin_tekrar_input.text().strip()
             if pin != pin_tekrar:
                 self._hata_label.setText("PIN kodları eşleşmiyor.")
+                self._hata_label.show()
                 return
 
-        self._hata_label.setText("")
+        self._hata_label.hide()
         self._giris_btn.setEnabled(False)
-        self._giris_btn.setText("İşlem yapılıyor...")
+        self._giris_btn.setText("İşlem yapılıyor…")
 
         self._worker = _LoginWorker(pin, is_setup=self._is_setup_mode)
         self._worker.basarili.connect(self._on_basarili)
@@ -189,8 +232,10 @@ class LoginView(QWidget):
 
     def _on_hata(self, mesaj: str):
         self._hata_label.setText(mesaj)
+        self._hata_label.show()
         self._giris_btn.setEnabled(True)
-        self._giris_btn.setText("PIN Oluştur" if self._is_setup_mode else "Giriş Yap")
+        self._giris_btn.setText(
+            "PIN Oluştur" if self._is_setup_mode else "Giriş Yap")
         self._pin_input.clear()
         self._pin_tekrar_input.clear()
         self._pin_input.setFocus()

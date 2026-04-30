@@ -1,16 +1,15 @@
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout,
+    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QStackedWidget, QListWidget, QListWidgetItem,
-    QLabel, QStatusBar, QPushButton,
+    QLabel, QStatusBar, QPushButton, QFrame,
 )
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QColor
 
 from ..core.config import APP_NAME
 from ..core.token_store import get_refresh_token, clear_tokens
 from ..core import api_client
 
-# Modül view'ları (her biri kendi dosyasında geliştirilecek)
 from .dashboard_view import DashboardView
 from .urun_view import UrunView
 from .tedarikci_view import TedarikciView
@@ -21,53 +20,96 @@ from .gider_view import GiderView
 from .rapor_view import RaporView
 
 
+_MENU_OGELER = [
+    ("🏠  Dashboard",    DashboardView),
+    ("📦  Ürünler",      UrunView),
+    ("🚚  Tedarikçiler", TedarikciView),
+    ("👤  Müşteriler",   MusteriView),
+    ("⬇️  Alımlar",      AlimView),
+    ("💳  Satışlar",     SatisView),
+    ("💸  Giderler",     GiderView),
+    ("📊  Raporlar",     RaporView),
+]
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(APP_NAME)
-        self.setMinimumSize(1200, 700)
+        self.setMinimumSize(1280, 740)
         self._build_ui()
 
     def _build_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
-        layout = QHBoxLayout(central)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        root = QHBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
-        # Sol menü
+        # ── Kenar çubuğu ──────────────────────────────────────────────────
+        sidebar_container = QWidget()
+        sidebar_container.setFixedWidth(220)
+        sidebar_container.setObjectName("sidebar_container")
+        sidebar_container.setStyleSheet("background:#ffffff;")
+        sb_layout = QVBoxLayout(sidebar_container)
+        sb_layout.setContentsMargins(0, 0, 0, 0)
+        sb_layout.setSpacing(0)
+
+        # Uygulama logosu / adı
+        brand = QFrame()
+        brand.setFixedHeight(60)
+        brand.setStyleSheet("background:#ffffff; border-bottom:1px solid #e0e3e5;")
+        brand_layout = QHBoxLayout(brand)
+        brand_layout.setContentsMargins(18, 0, 18, 0)
+        brand_lbl = QLabel("🔧 Lastik Servisi")
+        brand_lbl.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+        brand_lbl.setStyleSheet("color:#003d9b; background:transparent;")
+        brand_layout.addWidget(brand_lbl)
+        sb_layout.addWidget(brand)
+
+        # Navigasyon listesi
         self._menu = QListWidget()
-        self._menu.setFixedWidth(180)
-        self._menu.setFont(QFont("Segoe UI", 10))
-        menü_ogeler = [
-            ("Dashboard",   DashboardView),
-            ("Ürünler",     UrunView),
-            ("Tedarikçiler",TedarikciView),
-            ("Müşteriler",  MusteriView),
-            ("Alımlar",     AlimView),
-            ("Satışlar",    SatisView),
-            ("Giderler",    GiderView),
-            ("Raporlar",    RaporView),
-        ]
+        self._menu.setObjectName("sidebar")
+        self._menu.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self._menu.setFont(QFont("Inter", 12))
 
         self._stack = QStackedWidget()
 
-        for i, (baslik, ViewClass) in enumerate(menü_ogeler):
+        for baslik, ViewClass in _MENU_OGELER:
             item = QListWidgetItem(baslik)
-            item.setSizeHint(QSize(180, 44))
+            item.setSizeHint(QSize(204, 44))
             self._menu.addItem(item)
             self._stack.addWidget(ViewClass())
 
         self._menu.currentRowChanged.connect(self._stack.setCurrentIndex)
         self._menu.setCurrentRow(0)
+        sb_layout.addWidget(self._menu)
+        sb_layout.addStretch()
 
-        layout.addWidget(self._menu)
-        layout.addWidget(self._stack)
+        # Versiyon etiketi
+        ver_lbl = QLabel("v1.0")
+        ver_lbl.setStyleSheet(
+            "color:#737685; font-size:11px; padding:8px 20px;"
+            "background:#ffffff; border-top:1px solid #e0e3e5;"
+        )
+        sb_layout.addWidget(ver_lbl)
 
-        # Durum çubuğu + çıkış butonu
+        root.addWidget(sidebar_container)
+
+        # ── İçerik alanı ──────────────────────────────────────────────────
+        root.addWidget(self._stack)
+
+        # ── Durum çubuğu ──────────────────────────────────────────────────
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
-        cikis_btn = QPushButton("Çıkış")
+
+        kullanici_lbl = QLabel("👤 Admin")
+        kullanici_lbl.setStyleSheet("color:#505f76; padding:0 8px;")
+        status_bar.addWidget(kullanici_lbl)
+
+        cikis_btn = QPushButton("Çıkış Yap")
+        cikis_btn.setObjectName("flat")
+        cikis_btn.setFixedHeight(28)
         cikis_btn.clicked.connect(self._cikis)
         status_bar.addPermanentWidget(cikis_btn)
 

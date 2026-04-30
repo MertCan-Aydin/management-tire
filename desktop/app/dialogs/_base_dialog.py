@@ -1,13 +1,13 @@
 """
 Tüm form diyaloglarının temel sınıfı.
-Kaydet/İptal butonlarını ve hata gösterimini standartlaştırır.
 """
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QPushButton, QLabel, QMessageBox, QSizePolicy,
+    QPushButton, QLabel, QFrame,
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 
 class _SaveWorker(QThread):
@@ -30,68 +30,99 @@ class BaseFormDialog(QDialog):
     """
     Alt sınıflar şunları uygular:
         BASLIK : str
-        _form_alanlari()  -> QFormLayout (form_layout'u doldurmak için)
-        _kaydet_fn()      -> callable (API çağrısı yapan lambda/fn)
+        _form_alanlari()  → form_layout'u doldurur
+        _kaydet_fn()      → API çağrısı yapan callable
     """
     BASLIK = "Form"
 
     def __init__(self, parent=None, duzenleme: dict = None):
         super().__init__(parent)
-        self._duzenleme = duzenleme   # None ise yeni kayıt, dict ise düzenleme
+        self._duzenleme = duzenleme
         self._worker = None
-        self.setWindowTitle(self.BASLIK if not duzenleme else f"{self.BASLIK} — Düzenle")
-        self.setMinimumWidth(420)
+        mod = "Düzenle" if duzenleme else "Yeni"
+        self.setWindowTitle(f"{self.BASLIK} — {mod}")
+        self.setMinimumWidth(460)
+        self.setModal(True)
         self._build_ui()
         if duzenleme:
             self._form_doldur(duzenleme)
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setSpacing(12)
+        root.setContentsMargins(24, 20, 24, 20)
+        root.setSpacing(16)
 
+        # Başlık
         baslik = QLabel(self.windowTitle())
-        baslik.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        baslik.setFont(QFont("Inter", 14, QFont.Weight.Bold))
+        baslik.setStyleSheet("color:#191c1e;")
         root.addWidget(baslik)
 
+        # Ayırıcı
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet("border:none; border-top:1px solid #e0e3e5; margin:0;")
+        sep.setFixedHeight(1)
+        root.addWidget(sep)
+
+        # Form alanları
         self.form_layout = QFormLayout()
-        self.form_layout.setSpacing(8)
+        self.form_layout.setSpacing(10)
+        self.form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        self.form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft)
         self._form_alanlari()
         root.addLayout(self.form_layout)
 
+        # Hata etiketi
         self._hata_label = QLabel("")
-        self._hata_label.setStyleSheet("color: #c0392b;")
         self._hata_label.setWordWrap(True)
+        self._hata_label.setStyleSheet(
+            "color:#dc2626; background:#fee2e2; border-radius:6px;"
+            "padding:6px 10px; font-size:12px;"
+        )
+        self._hata_label.hide()
         root.addWidget(self._hata_label)
 
+        # Buton satırı
+        sep2 = QFrame()
+        sep2.setFrameShape(QFrame.Shape.HLine)
+        sep2.setStyleSheet("border:none; border-top:1px solid #e0e3e5;")
+        sep2.setFixedHeight(1)
+        root.addWidget(sep2)
+
         buton_row = QHBoxLayout()
+        buton_row.setSpacing(10)
         buton_row.addStretch()
+
         self._iptal_btn = QPushButton("İptal")
+        self._iptal_btn.setObjectName("flat")
+        self._iptal_btn.setFixedHeight(36)
         self._iptal_btn.clicked.connect(self.reject)
         buton_row.addWidget(self._iptal_btn)
+
         self._kaydet_btn = QPushButton("Kaydet")
         self._kaydet_btn.setDefault(True)
+        self._kaydet_btn.setFixedHeight(36)
+        self._kaydet_btn.setMinimumWidth(100)
         self._kaydet_btn.clicked.connect(self._kaydet)
         buton_row.addWidget(self._kaydet_btn)
+
         root.addLayout(buton_row)
 
     def _form_alanlari(self):
-        """Alt sınıf form alanlarını self.form_layout'a ekler."""
         pass
 
     def _form_doldur(self, data: dict):
-        """Düzenleme modunda alanları mevcut veriyle doldurur."""
         pass
 
     def _kaydet_fn(self):
-        """API çağrısını yapan callable. Alt sınıf uygular."""
         raise NotImplementedError
 
     def _dogrula(self) -> bool:
-        """Kaydetmeden önce doğrulama. False dönerse kayıt durur."""
         return True
 
     def _kaydet(self):
-        self._hata_label.setText("")
+        self._hata_label.hide()
         if not self._dogrula():
             return
         self._kaydet_btn.setEnabled(False)
@@ -102,6 +133,7 @@ class BaseFormDialog(QDialog):
         self._worker.start()
 
     def _on_hata(self, mesaj: str):
-        self._hata_label.setText(mesaj)
+        self._hata_label.setText(f"⚠  {mesaj}")
+        self._hata_label.show()
         self._kaydet_btn.setEnabled(True)
         self._kaydet_btn.setText("Kaydet")
