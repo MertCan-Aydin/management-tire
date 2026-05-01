@@ -7,6 +7,7 @@ from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
 from ..core import api_client
+from ..core.utils import tr_para, tr_sayi
 
 
 class _DashboardWorker(QThread):
@@ -198,10 +199,12 @@ class DashboardView(QWidget):
         for key, kart in self._kartlar.items():
             val = data.get(key, 0) or 0
             if key in para_anahtarlar:
-                kart.set_deger(f"₺ {val:,.0f}")
+                kart.set_deger(f"₺ {tr_sayi(val)}")
             else:
                 kart.set_deger(str(val))
 
     def showEvent(self, event):
         super().showEvent(event)
+        if self._worker and self._worker.isRunning():
+            return
         self.yukle()

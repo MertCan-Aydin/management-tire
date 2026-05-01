@@ -1,4 +1,5 @@
 from ..core import api_client
+from ..core.utils import tr_para
 from ._base_view import BaseListView
 from ..dialogs.gider_dialog import GiderDialog
 
@@ -12,7 +13,7 @@ class GiderView(BaseListView):
         return [
             str(row.get("tarih", ""))[:16],
             row.get("aciklama", ""),
-            f"{row.get('tutar', 0):,.2f}",
+            tr_para(row.get('tutar', 0)),
         ]
 
     def _ekle_dialogu(self):

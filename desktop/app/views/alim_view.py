@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QHeaderView
 from ..core import api_client
+from ..core.utils import tr_para
 from ._base_view import BaseListView
 from ..dialogs.alim_dialog import AlimDialog
 
@@ -13,7 +14,7 @@ class AlimView(BaseListView):
         return [
             str(row.get("tarih", ""))[:16],
             row.get("tedarikci_adi", ""),
-            f"{row.get('toplam_tutar', 0):,.2f}",
+            tr_para(row.get('toplam_tutar', 0)),
             "İptal" if row.get("iptal_mi") else "Aktif",
         ]
 
@@ -32,7 +33,7 @@ class AlimView(BaseListView):
         dlg.setMinimumWidth(500)
         lay = QVBoxLayout(dlg)
         lay.addWidget(QLabel(f"Tedarikçi: {row.get('tedarikci_adi', '')}"))
-        lay.addWidget(QLabel(f"Tarih: {str(row.get('tarih', ''))[:16]}  |  Toplam: {row.get('toplam_tutar', 0):.2f} ₺"))
+        lay.addWidget(QLabel(f"Tarih: {str(row.get('tarih', ''))[:16]}  |  Toplam: {tr_para(row.get('toplam_tutar', 0))} ₺"))
         tablo = QTableWidget(0, 4)
         tablo.setHorizontalHeaderLabels(["Ürün", "Miktar", "Birim ₺", "Toplam ₺"])
         tablo.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -41,7 +42,7 @@ class AlimView(BaseListView):
             tablo.insertRow(r)
             tablo.setItem(r, 0, QTableWidgetItem(k.get("urun_adi_anlik", "")))
             tablo.setItem(r, 1, QTableWidgetItem(str(k.get("miktar", 0))))
-            tablo.setItem(r, 2, QTableWidgetItem(f"{k.get('birim_fiyat', 0):.2f}"))
-            tablo.setItem(r, 3, QTableWidgetItem(f"{k.get('toplam_fiyat', 0):.2f}"))
+            tablo.setItem(r, 2, QTableWidgetItem(tr_para(k.get('birim_fiyat', 0))))
+            tablo.setItem(r, 3, QTableWidgetItem(tr_para(k.get('toplam_fiyat', 0))))
         lay.addWidget(tablo)
         dlg.exec()

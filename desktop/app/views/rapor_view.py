@@ -9,6 +9,7 @@ from PyQt6.QtCore import QDate, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 
 from ..core import api_client
+from ..core.utils import tr_para
 
 
 class _RaporWorker(QThread):
@@ -117,7 +118,7 @@ class RaporView(QWidget):
         kirilim = data.get("kirilim") or []
         en_cok = data.get("en_cok") or []
 
-        def _fmt(v): return f"{float(v or 0):,.2f}"
+        def _fmt(v): return tr_para(float(v or 0))
 
         self._lbl_ciro.findChild(QLabel, "val").setText(_fmt(aralik.get("toplam_ciro", 0)))
         self._lbl_kar.findChild(QLabel, "val").setText(_fmt(aralik.get("toplam_kar", 0)))

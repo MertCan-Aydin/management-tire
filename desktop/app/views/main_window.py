@@ -1,10 +1,9 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QStackedWidget, QListWidget, QListWidgetItem,
-    QLabel, QStatusBar, QPushButton, QFrame,
+    QStackedWidget, QLabel, QStatusBar, QPushButton, QFrame,
 )
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 
 from ..core.config import APP_NAME
 from ..core.token_store import get_refresh_token, clear_tokens
@@ -18,17 +17,19 @@ from .alim_view import AlimView
 from .satis_view import SatisView
 from .gider_view import GiderView
 from .rapor_view import RaporView
+from .lastik_oteli_view import LastikOteliView
 
 
 _MENU_OGELER = [
-    ("🏠  Dashboard",    DashboardView),
-    ("📦  Ürünler",      UrunView),
-    ("🚚  Tedarikçiler", TedarikciView),
-    ("👤  Müşteriler",   MusteriView),
-    ("⬇️  Alımlar",      AlimView),
-    ("💳  Satışlar",     SatisView),
-    ("💸  Giderler",     GiderView),
-    ("📊  Raporlar",     RaporView),
+    ("🏠  Dashboard",      DashboardView),
+    ("📦  Ürünler",        UrunView),
+    ("🚚  Tedarikçiler",   TedarikciView),
+    ("👤  Müşteriler",     MusteriView),
+    ("⬇️  Alımlar",        AlimView),
+    ("💳  Satışlar",       SatisView),
+    ("💸  Giderler",       GiderView),
+    ("🏪  Lastik Oteli",   LastikOteliView),
+    ("📊  Raporlar",       RaporView),
 ]
 
 
@@ -67,24 +68,29 @@ class MainWindow(QMainWindow):
         brand_layout.addWidget(brand_lbl)
         sb_layout.addWidget(brand)
 
-        # Navigasyon listesi
-        self._menu = QListWidget()
-        self._menu.setObjectName("sidebar")
-        self._menu.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self._menu.setFont(QFont("Inter", 12))
-
+        # Navigasyon butonları
         self._stack = QStackedWidget()
+        self._nav_butonlar: list[QPushButton] = []
 
-        for baslik, ViewClass in _MENU_OGELER:
-            item = QListWidgetItem(baslik)
-            item.setSizeHint(QSize(204, 44))
-            self._menu.addItem(item)
+        nav_container = QWidget()
+        nav_container.setStyleSheet("background:#ffffff;")
+        nav_layout = QVBoxLayout(nav_container)
+        nav_layout.setContentsMargins(8, 8, 8, 8)
+        nav_layout.setSpacing(2)
+
+        for i, (baslik, ViewClass) in enumerate(_MENU_OGELER):
+            btn = QPushButton(baslik)
+            btn.setFixedHeight(42)
+            btn.setCheckable(True)
+            btn.setFont(QFont("Inter", 12))
+            btn.setStyleSheet(self._nav_btn_stili(False))
+            btn.clicked.connect(lambda checked, idx=i: self._nav_sec(idx))
+            nav_layout.addWidget(btn)
+            self._nav_butonlar.append(btn)
             self._stack.addWidget(ViewClass())
 
-        self._menu.currentRowChanged.connect(self._stack.setCurrentIndex)
-        self._menu.setCurrentRow(0)
-        sb_layout.addWidget(self._menu)
-        sb_layout.addStretch()
+        nav_layout.addStretch()
+        sb_layout.addWidget(nav_container)
 
         # Versiyon etiketi
         ver_lbl = QLabel("v1.0")
@@ -93,6 +99,8 @@ class MainWindow(QMainWindow):
             "background:#ffffff; border-top:1px solid #e0e3e5;"
         )
         sb_layout.addWidget(ver_lbl)
+
+        self._nav_sec(0)
 
         root.addWidget(sidebar_container)
 
@@ -112,6 +120,42 @@ class MainWindow(QMainWindow):
         cikis_btn.setFixedHeight(28)
         cikis_btn.clicked.connect(self._cikis)
         status_bar.addPermanentWidget(cikis_btn)
+
+    def _nav_sec(self, idx: int):
+        self._stack.setCurrentIndex(idx)
+        for i, btn in enumerate(self._nav_butonlar):
+            btn.setChecked(i == idx)
+            btn.setStyleSheet(self._nav_btn_stili(i == idx))
+
+    @staticmethod
+    def _nav_btn_stili(secili: bool) -> str:
+        if secili:
+            return """
+                QPushButton {
+                    background-color: #eef2ff;
+                    color: #003d9b;
+                    border: none;
+                    border-radius: 8px;
+                    padding-left: 16px;
+                    text-align: left;
+                    font-weight: bold;
+                }
+            """
+        return """
+            QPushButton {
+                background-color: transparent;
+                color: #505f76;
+                border: none;
+                border-radius: 8px;
+                padding-left: 16px;
+                text-align: left;
+                font-weight: normal;
+            }
+            QPushButton:hover {
+                background-color: #f0f4ff;
+                color: #003d9b;
+            }
+        """
 
     def _cikis(self):
         raw_refresh = get_refresh_token()

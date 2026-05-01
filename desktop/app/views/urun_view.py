@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QMessageBox
 from ..core import api_client
+from ..core.utils import tr_para
 from ._base_view import BaseListView
 from ..dialogs.urun_dialog import UrunDialog
 
@@ -18,8 +19,8 @@ class UrunView(BaseListView):
             row.get("marka_adi", ""),
             row.get("model_adi", ""),
             row.get("mevsim", "") or "",
-            f"{row.get('satis_fiyati', 0):,.2f}",
-            f"{row.get('maliyet_fiyati', 0) or 0:,.2f}",
+            tr_para(row.get('satis_fiyati', 0)),
+            tr_para(row.get('maliyet_fiyati', 0) or 0),
             str(row.get("stok", 0)),
         ]
 

@@ -70,14 +70,6 @@ class BaseListView(QWidget):
         self._arama.textChanged.connect(self._filtrele)
         toolbar.addWidget(self._arama)
 
-        # Yenile butonu
-        self._yenile_btn = QPushButton("↻")
-        self._yenile_btn.setObjectName("flat")
-        self._yenile_btn.setFixedSize(36, 36)
-        self._yenile_btn.setToolTip("Yenile")
-        self._yenile_btn.clicked.connect(self.yukle)
-        toolbar.addWidget(self._yenile_btn)
-
         # Ekle butonu
         self._ekle_btn = QPushButton("+ Yeni")
         self._ekle_btn.setFixedHeight(36)
@@ -133,11 +125,18 @@ class BaseListView(QWidget):
 
         self.yukle()
 
+    def showEvent(self, event):
+        """Sekmeye her geçişte veriyi tazele."""
+        super().showEvent(event)
+        # Önceki worker hâlâ çalışıyorsa yeni istek atma
+        if self._worker and self._worker.isRunning():
+            return
+        self.yukle()
+
     def yukle(self):
         from ..core import api_client
 
         self._bilgi_lbl.setText("Yükleniyor…")
-        self._ekle_btn.setEnabled(False)
 
         def fetch():
             return api_client.get(self.API_PATH)
@@ -145,19 +144,20 @@ class BaseListView(QWidget):
         self._worker = _ListeWorker(fetch)
         self._worker.veri_geldi.connect(self._veri_yukle)
         self._worker.hata.connect(self._yukle_hatasi)
+        # Worker bitince buton her zaman aktif kalsın (sinyal gelmese bile)
+        self._worker.finished.connect(lambda: self._ekle_btn.setEnabled(True))
         self._worker.start()
+        self._ekle_btn.setEnabled(False)
 
     def _veri_yukle(self, rows: list):
         self._satirlar = rows
         self._tablo_doldur(rows)
-        self._ekle_btn.setEnabled(True)
         sayi = len(rows)
         self._bilgi_lbl.setText(
             f"{sayi} kayıt  •  Düzenlemek için çift tıklayın  •  Silmek için Delete")
 
     def _yukle_hatasi(self, msg: str):
         self._bilgi_lbl.setText(f"⚠ Hata: {msg}")
-        self._ekle_btn.setEnabled(True)
 
     def _tablo_doldur(self, rows: list):
         self._tablo.setRowCount(0)

@@ -190,7 +190,8 @@ class AlimDialog(QDialog):
 
     def _ozet_guncelle(self):
         toplam = sum(k["miktar"] * k["birim_fiyat"] for k in self._kalemler)
-        self._ozet_label.setText(f"Toplam: {toplam:,.2f} ₺")
+        from ..core.utils import tr_para
+        self._ozet_label.setText(f"Toplam: {tr_para(toplam)} ₺")
 
     def _kaydet(self):
         self._hata.setText("")

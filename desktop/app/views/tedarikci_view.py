@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QMessageBox, QPushButton, QHBoxLayout
 from ..core import api_client
+from ..core.utils import tr_para
 from ._base_view import BaseListView
 from ..dialogs.tedarikci_dialog import TedarikciDialog, TedarikciOdemeDialog
 
@@ -13,7 +14,7 @@ class TedarikciView(BaseListView):
         return [
             row.get("ad", ""),
             row.get("iletisim_bilgisi", "") or "",
-            f"{row.get('guncel_borc', 0):,.2f}",
+            tr_para(row.get('guncel_borc', 0)),
         ]
 
     def _build_ui(self):

@@ -18,6 +18,7 @@ from .presentation import (
     satis_router,
     gider_router,
     rapor_router,
+    lastik_oteli_router,
 )
 
 # ── Loglama ──────────────────────────────────────────────────────────────────
@@ -96,7 +97,8 @@ app.include_router(musteri_router.router,   prefix="/api/musteriler",   tags=["M
 app.include_router(alim_router.router,      prefix="/api/alimlar",      tags=["Alımlar"])
 app.include_router(satis_router.router,     prefix="/api/satislar",     tags=["Satışlar"])
 app.include_router(gider_router.router,     prefix="/api/giderler",     tags=["Giderler"])
-app.include_router(rapor_router.router,     prefix="/api/raporlar",     tags=["Raporlar"])
+app.include_router(rapor_router.router,       prefix="/api/raporlar",      tags=["Raporlar"])
+app.include_router(lastik_oteli_router.router, prefix="/api/lastik-oteli", tags=["Lastik Oteli"])
 
 
 # ── Sağlık Kontrolü ──────────────────────────────────────────────────────────
