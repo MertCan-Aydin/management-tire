@@ -33,13 +33,15 @@ class LastikOteliView(BaseListView):
         super()._build_ui()
         toolbar = self.layout().itemAt(0).layout()
 
-        # Sadece aktif filtresi
+        # Sadece aktif filtresi (aynı yükseklik)
         self._sadece_aktif = QCheckBox("Sadece depodakiler")
         self._sadece_aktif.setChecked(True)
+        self._sadece_aktif.setFixedHeight(36)
         self._sadece_aktif.stateChanged.connect(self.yukle)
-        toolbar.insertWidget(2, self._sadece_aktif)
+        # + Yeni butonunun hemen soluna ekle (count-1 = + Yeni'nin yeri)
+        toolbar.insertWidget(toolbar.count() - 1, self._sadece_aktif)
 
-        # Teslim Et butonu
+        # Teslim Et butonu (diğer butonlarla aynı yükseklik)
         self._teslim_btn = QPushButton("✓ Teslim Et")
         self._teslim_btn.setObjectName("flat")
         self._teslim_btn.setFixedHeight(36)

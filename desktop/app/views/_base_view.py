@@ -55,6 +55,7 @@ class BaseListView(QWidget):
         # ── Başlık + araç çubuğu ──────────────────────────────────────────
         toolbar = QHBoxLayout()
         toolbar.setSpacing(10)
+        toolbar.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         baslik = QLabel(self.BASLIK)
         baslik.setFont(QFont("Inter", 17, QFont.Weight.Bold))

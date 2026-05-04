@@ -2,7 +2,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont
 
-from app.core.token_store import get_access_token
+from app.core.token_store import clear_tokens
 from app.views.login_view import LoginView
 from app.views.main_window import MainWindow
 from app.styles import APP_STYLE
@@ -19,6 +19,9 @@ def main():
         font = QFont("Segoe UI", 13)
     app.setFont(font)
 
+    # Her açılışta önceki oturumu sil — PIN her seferinde sorulsun
+    clear_tokens()
+
     def ac_ana_pencere():
         pencere.hide()
         main_win = MainWindow()
@@ -26,13 +29,8 @@ def main():
         app._main_win = main_win
 
     pencere = LoginView()
-
-    if get_access_token():
-        main_win = MainWindow()
-        main_win.show()
-    else:
-        pencere.giris_yapildi.connect(ac_ana_pencere)
-        pencere.show()
+    pencere.giris_yapildi.connect(ac_ana_pencere)
+    pencere.show()
 
     sys.exit(app.exec())
 

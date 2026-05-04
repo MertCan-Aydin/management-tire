@@ -19,10 +19,12 @@ class TedarikciView(BaseListView):
 
     def _build_ui(self):
         super()._build_ui()
-        # Ödeme butonu ekle
+        # Ödeme butonu — diğer butonlarla aynı yükseklik
         odeme_btn = QPushButton("Ödeme Yap")
+        odeme_btn.setObjectName("flat")
+        odeme_btn.setFixedHeight(36)
         odeme_btn.clicked.connect(self._odeme_yap)
-        # Araç çubuğuna ekle (layout'un ilk çocuğu HBoxLayout)
+        # Araç çubuğuna ekle: + Yeni butonundan hemen önce
         ust_lay = self.layout().itemAt(0).layout()
         ust_lay.insertWidget(ust_lay.count() - 1, odeme_btn)
 
