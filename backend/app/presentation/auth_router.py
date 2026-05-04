@@ -4,9 +4,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from ..core.db import get_cursor
 from ..core.security import decode_access_token
 from ..business import auth_service
-from ..data_access import auth_dal
 from ..schemas.auth import (
-    TokenResponse, RefreshRequest, ParolaDegistirRequest, 
+    TokenResponse, RefreshRequest, ParolaDegistirRequest,
     KullaniciBilgi, PinLoginRequest
 )
 
@@ -29,21 +28,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
 def setup_durumu():
     """Sistemde kurulu bir admin olup olmadığını döner."""
     with get_cursor() as (cursor, _):
-        admin = auth_dal.admin_kullanici_getir(cursor)
-    return {"kurulu_mu": admin is not None}
+        return auth_service.setup_durumu(cursor)
 
 
 @router.post("/pin-kurulum", response_model=TokenResponse)
 def pin_kurulum(body: PinLoginRequest):
     """Sistem ilk kurulduğunda admin PIN'ini oluşturur."""
     with get_cursor() as (cursor, _):
-        # Güvenlik: Zaten admin varsa kuruluma izin verme
-        mevcut = auth_dal.admin_kullanici_getir(cursor)
-        if mevcut:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Sistem zaten kurulu."
-            )
         return auth_service.pin_kurulum_yap(cursor, body.pin)
 
 
@@ -86,7 +77,4 @@ def parola_degistir(
 @router.get("/ben", response_model=KullaniciBilgi)
 def ben(current_user: dict = Depends(get_current_user)):
     with get_cursor() as (cursor, _):
-        kullanici = auth_dal.kullanici_getir(cursor, current_user["id"])
-    if not kullanici:
-        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
-    return kullanici
+        return auth_service.ben_getir(cursor, current_user["id"])

@@ -71,7 +71,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_NAME=DijitalLastikServisiDB
 DB_USER=lastik_user
-DB_PASSWORD=MgmtPass_c285e8fb4d88
+DB_PASSWORD=__VERITABANI_SIFRENIZI_BURAYA_YAZIN__
 
 # En az 32 karakter rastgele: python3 -c "import secrets; print(secrets.token_hex(32))"
 JWT_SECRET=BURAYA_32_KARAKTER_RASTGELE_YAZ
@@ -116,6 +116,9 @@ mysql -u root -p DijitalLastikServisiDB < db/migrations/002_stored_procedures.sq
 mysql -u root -p DijitalLastikServisiDB < db/migrations/003_functions_triggers.sql
 mysql -u root -p DijitalLastikServisiDB < db/migrations/005_auth.sql
 mysql -u root -p DijitalLastikServisiDB < db/migrations/006_raporlar.sql
+mysql -u root -p DijitalLastikServisiDB < db/migrations/007_pin_login.sql
+mysql -u root -p DijitalLastikServisiDB < db/migrations/008_eprel.sql
+mysql -u root -p DijitalLastikServisiDB < db/migrations/009_lastik_oteli.sql
 ```
 
 ### 5d. Indexleri Ekle (sadece MariaDB 10.1.4+ / MySQL 8.0.26+)

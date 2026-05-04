@@ -10,9 +10,28 @@ from ..core.security import (
 from ..data_access import auth_dal
 
 
+def setup_durumu(cursor) -> dict:
+    """Sistemde kurulu admin var mı?"""
+    admin = auth_dal.admin_kullanici_getir(cursor)
+    return {"kurulu_mu": admin is not None}
+
+
+def ben_getir(cursor, kullanici_id: int) -> dict:
+    """Mevcut kullanıcı bilgisini döner."""
+    kullanici = auth_dal.kullanici_getir(cursor, kullanici_id)
+    if not kullanici:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kullanıcı bulunamadı")
+    return kullanici
+
+
 def pin_kurulum_yap(cursor, pin: str) -> dict:
     """İlk kurulum: admin kullanıcısını oluşturur ve PIN'i set eder."""
-    # Varsayılan admin kullanıcı adı 'admin'
+    # Güvenlik: zaten admin varsa kuruluma izin verme
+    if auth_dal.admin_kullanici_getir(cursor):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sistem zaten kurulu.",
+        )
     hashli_pin = hash_password(pin)
     kullanici_id = auth_dal.kullanici_olustur(cursor, "admin", hashli_pin, "admin")
     

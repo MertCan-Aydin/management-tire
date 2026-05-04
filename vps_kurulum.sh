@@ -163,6 +163,9 @@ MIGRATIONS=(
     "004_indexes.sql"
     "005_auth.sql"
     "006_raporlar.sql"
+    "007_pin_login.sql"
+    "008_eprel.sql"
+    "009_lastik_oteli.sql"
 )
 
 for mf in "${MIGRATIONS[@]}"; do
