@@ -112,13 +112,32 @@ class MainWindow(QMainWindow):
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
 
-        kullanici_lbl = QLabel("👤 Admin")
-        kullanici_lbl.setStyleSheet("color:#505f76; padding:0 8px;")
+        kullanici_lbl = QLabel("👤  Admin")
+        kullanici_lbl.setStyleSheet(
+            "color:#505f76; padding:0 8px; font-size:12px; background:transparent;")
         status_bar.addWidget(kullanici_lbl)
 
-        cikis_btn = QPushButton("Çıkış Yap")
-        cikis_btn.setObjectName("flat")
-        cikis_btn.setFixedHeight(28)
+        # Çıkış — status bar'a yakışan ince link tarzı buton
+        cikis_btn = QPushButton("⎋  Çıkış Yap")
+        cikis_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        cikis_btn.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: #505f76;
+                border: none;
+                padding: 4px 10px;
+                font-size: 12px;
+                min-height: 0;
+            }
+            QPushButton:hover {
+                color: #dc2626;
+                background: #fee2e2;
+                border-radius: 6px;
+            }
+            QPushButton:pressed {
+                background: #fecaca;
+            }
+        """)
         cikis_btn.clicked.connect(self._cikis)
         status_bar.addPermanentWidget(cikis_btn)
 
