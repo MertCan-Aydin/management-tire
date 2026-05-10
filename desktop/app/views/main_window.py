@@ -117,25 +117,27 @@ class MainWindow(QMainWindow):
             "color:#505f76; padding:0 8px; font-size:12px; background:transparent;")
         status_bar.addWidget(kullanici_lbl)
 
-        # Çıkış — status bar'a yakışan ince link tarzı buton
-        cikis_btn = QPushButton("⎋  Çıkış Yap")
+        # Çıkış butonu — gri zemin, kırmızı hover (tasarım sistemi flat varyantı)
+        cikis_btn = QPushButton("Çıkış Yap")
         cikis_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        cikis_btn.setFixedSize(96, 30)
         cikis_btn.setStyleSheet("""
             QPushButton {
-                background: transparent;
+                background-color: #eceef0;
                 color: #505f76;
                 border: none;
-                padding: 4px 10px;
+                border-radius: 6px;
                 font-size: 12px;
+                font-weight: 500;
                 min-height: 0;
+                padding: 0;
             }
             QPushButton:hover {
+                background-color: #fee2e2;
                 color: #dc2626;
-                background: #fee2e2;
-                border-radius: 6px;
             }
             QPushButton:pressed {
-                background: #fecaca;
+                background-color: #fecaca;
             }
         """)
         cikis_btn.clicked.connect(self._cikis)

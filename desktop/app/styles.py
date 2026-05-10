@@ -232,7 +232,12 @@ QStatusBar {{
     background-color: {C['surface']};
     border-top: 1px solid {C['border']};
     color: {C['text_md']};
-    padding: 2px 8px;
+    padding: 4px 10px;
+    min-height: 36px;
+}}
+
+QStatusBar::item {{
+    border: none;
 }}
 
 /* ── Kaydırma çubukları ─────────────────────────────────────────────────── */
