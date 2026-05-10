@@ -1,7 +1,7 @@
 from datetime import date
 from PyQt6.QtWidgets import (
-    QLineEdit, QSpinBox, QComboBox, QTextEdit,
-    QLabel, QDateEdit, QCompleter, QHBoxLayout,
+    QLineEdit, QSpinBox, QComboBox, QTextEdit, QRadioButton,
+    QLabel, QDateEdit, QCompleter, QHBoxLayout, QButtonGroup, QWidget,
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QDate
 from PyQt6.QtGui import QFont
@@ -63,10 +63,24 @@ class LastikOteliDialog(BaseFormDialog):
         self._adet.setValue(4)
         self.form_layout.addRow("Adet", self._adet)
 
-        # Sezon
-        self._sezon = QComboBox()
-        self._sezon.addItems(["Yaz", "Kış"])
-        self.form_layout.addRow("Sezon *", self._sezon)
+        # Sezon — QRadioButton ile (Hafta 2)
+        sezon_widget = QWidget()
+        sezon_layout = QHBoxLayout(sezon_widget)
+        sezon_layout.setContentsMargins(0, 0, 0, 0)
+        sezon_layout.setSpacing(20)
+
+        self._sezon_yaz = QRadioButton("☀ Yaz")
+        self._sezon_kis = QRadioButton("❄ Kış")
+        self._sezon_yaz.setChecked(True)
+
+        self._sezon_grup = QButtonGroup(self)
+        self._sezon_grup.addButton(self._sezon_yaz)
+        self._sezon_grup.addButton(self._sezon_kis)
+
+        sezon_layout.addWidget(self._sezon_yaz)
+        sezon_layout.addWidget(self._sezon_kis)
+        sezon_layout.addStretch()
+        self.form_layout.addRow("Sezon *", sezon_widget)
 
         # Giriş tarihi
         self._giris = QDateEdit(QDate.currentDate())
@@ -111,9 +125,10 @@ class LastikOteliDialog(BaseFormDialog):
         self._raf_kodu.setText(data.get("raf_kodu", ""))
         self._lastik_bilgisi.setText(data.get("lastik_bilgisi", "") or "")
         self._adet.setValue(int(data.get("lastik_adedi", 4)))
-        idx = self._sezon.findText(data.get("sezon", "Yaz"))
-        if idx >= 0:
-            self._sezon.setCurrentIndex(idx)
+        if data.get("sezon") == "Kış":
+            self._sezon_kis.setChecked(True)
+        else:
+            self._sezon_yaz.setChecked(True)
         if data.get("giris_tarihi"):
             gd = str(data["giris_tarihi"])[:10].split("-")
             self._giris.setDate(QDate(int(gd[0]), int(gd[1]), int(gd[2])))
@@ -140,7 +155,7 @@ class LastikOteliDialog(BaseFormDialog):
             "raf_kodu":          self._raf_kodu.text().strip().upper(),
             "lastik_bilgisi":    self._lastik_bilgisi.text().strip() or None,
             "lastik_adedi":      self._adet.value(),
-            "sezon":             self._sezon.currentText(),
+            "sezon":             "Kış" if self._sezon_kis.isChecked() else "Yaz",
             "giris_tarihi":      f"{gd.year()}-{gd.month():02d}-{gd.day():02d}",
             "notlar":            self._notlar.toPlainText().strip() or None,
         }

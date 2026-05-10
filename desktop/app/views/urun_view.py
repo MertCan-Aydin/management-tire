@@ -27,11 +27,13 @@ class UrunView(BaseListView):
     def _ekle_dialogu(self):
         dlg = UrunDialog(self)
         if dlg.exec():
+            self._status_mesaj("Yeni ürün eklendi ✓", 2500)
             self.yukle()
 
     def _duzenle_dialogu(self, row: dict):
         dlg = UrunDialog(self, duzenleme=row)
         if dlg.exec():
+            self._status_mesaj(f"'{row['ad']}' güncellendi ✓", 2500)
             self.yukle()
 
     def keyPressEvent(self, event):
@@ -44,6 +46,7 @@ class UrunView(BaseListView):
             ) == QMessageBox.StandardButton.Yes:
                 try:
                     api_client.delete(f"/api/urunler/{row['id']}")
+                    self._status_mesaj(f"'{row['ad']}' silindi", 2500)
                     self.yukle()
                 except Exception as e:
                     QMessageBox.warning(self, "Hata", str(e))

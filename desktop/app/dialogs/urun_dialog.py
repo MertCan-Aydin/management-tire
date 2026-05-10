@@ -2,7 +2,8 @@ from PyQt6.QtWidgets import (
     QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox,
     QCheckBox, QTextEdit, QLabel,
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QRegularExpression
+from PyQt6.QtGui import QRegularExpressionValidator
 from ..core import api_client
 from ._base_dialog import BaseFormDialog
 
@@ -26,10 +27,12 @@ class UrunDialog(BaseFormDialog):
     BASLIK = "Ürün"
 
     def _form_alanlari(self):
-        # Barkod
+        # Barkod — sadece alfanümerik (boşluk yok)
         barkod_row = QLineEdit()
         self._barkod = barkod_row
         self._barkod.setPlaceholderText("Opsiyonel — QR koddan veya manuel")
+        barkod_regex = QRegularExpression(r'^[A-Za-z0-9\-_:./]{0,100}$')
+        self._barkod.setValidator(QRegularExpressionValidator(barkod_regex))
         self.form_layout.addRow("Barkod / QR", self._barkod)
 
         # Ürün Adı

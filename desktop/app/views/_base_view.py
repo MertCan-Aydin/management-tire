@@ -5,7 +5,7 @@ Liste + Ekle/Düzenle/Sil + API çağrısı pattern'ini standartlaştırır.
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton,
-    QLabel, QLineEdit, QHeaderView, QMessageBox, QFrame,
+    QLabel, QLineEdit, QHeaderView, QMessageBox, QFrame, QProgressBar,
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QColor
@@ -118,11 +118,36 @@ class BaseListView(QWidget):
         kart_layout.addWidget(self._tablo)
         layout.addWidget(kart)
 
-        # ── Alt bilgi ─────────────────────────────────────────────────────
+        # ── Alt bilgi + ilerleme çubuğu ───────────────────────────────────
+        alt_satir = QHBoxLayout()
+        alt_satir.setSpacing(10)
+
         self._bilgi_lbl = QLabel("")
         self._bilgi_lbl.setStyleSheet(
             "color:#737685; font-size:11px; background:transparent;")
-        layout.addWidget(self._bilgi_lbl)
+        alt_satir.addWidget(self._bilgi_lbl)
+        alt_satir.addStretch()
+
+        # QProgressBar — Hafta 6 (yükleme sırasında görünür)
+        self._progress = QProgressBar()
+        self._progress.setRange(0, 0)  # indeterminate
+        self._progress.setFixedSize(140, 6)
+        self._progress.setTextVisible(False)
+        self._progress.setStyleSheet("""
+            QProgressBar {
+                background: #eceef0;
+                border: none;
+                border-radius: 3px;
+            }
+            QProgressBar::chunk {
+                background: #003d9b;
+                border-radius: 3px;
+            }
+        """)
+        self._progress.hide()
+        alt_satir.addWidget(self._progress)
+
+        layout.addLayout(alt_satir)
 
         self.yukle()
 
@@ -138,6 +163,7 @@ class BaseListView(QWidget):
         from ..core import api_client
 
         self._bilgi_lbl.setText("Yükleniyor…")
+        self._progress.show()
 
         def fetch():
             return api_client.get(self.API_PATH)
@@ -145,10 +171,14 @@ class BaseListView(QWidget):
         self._worker = _ListeWorker(fetch)
         self._worker.veri_geldi.connect(self._veri_yukle)
         self._worker.hata.connect(self._yukle_hatasi)
-        # Worker bitince buton her zaman aktif kalsın (sinyal gelmese bile)
-        self._worker.finished.connect(lambda: self._ekle_btn.setEnabled(True))
+        # Worker bitince buton + progress her zaman düzelsin
+        self._worker.finished.connect(self._yukleme_bitti)
         self._worker.start()
         self._ekle_btn.setEnabled(False)
+
+    def _yukleme_bitti(self):
+        self._ekle_btn.setEnabled(True)
+        self._progress.hide()
 
     def _veri_yukle(self, rows: list):
         self._satirlar = rows
@@ -156,6 +186,16 @@ class BaseListView(QWidget):
         sayi = len(rows)
         self._bilgi_lbl.setText(
             f"{sayi} kayıt  •  Düzenlemek için çift tıklayın  •  Silmek için Delete")
+        self._status_mesaj(f"{sayi} kayıt yüklendi", 1500)
+
+    # statusBar yardımcısı — Hafta 7
+    def _status_mesaj(self, mesaj: str, ms: int = 2500):
+        try:
+            win = self.window()
+            if hasattr(win, "statusBar"):
+                win.statusBar().showMessage(mesaj, ms)
+        except Exception:
+            pass
 
     def _yukle_hatasi(self, msg: str):
         self._bilgi_lbl.setText(f"⚠ Hata: {msg}")

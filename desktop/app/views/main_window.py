@@ -1,9 +1,9 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QStackedWidget, QLabel, QStatusBar, QPushButton, QFrame,
+    QStackedWidget, QLabel, QStatusBar, QPushButton, QFrame, QMessageBox,
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QAction, QKeySequence
 
 from ..core.config import APP_NAME
 from ..core.token_store import get_refresh_token, clear_tokens
@@ -41,6 +41,9 @@ class MainWindow(QMainWindow):
         self._build_ui()
 
     def _build_ui(self):
+        # Menü çubuğu — Hafta 7
+        self._menu_olustur()
+
         central = QWidget()
         self.setCentralWidget(central)
         root = QHBoxLayout(central)
@@ -100,14 +103,12 @@ class MainWindow(QMainWindow):
         )
         sb_layout.addWidget(ver_lbl)
 
-        self._nav_sec(0)
-
         root.addWidget(sidebar_container)
 
         # ── İçerik alanı ──────────────────────────────────────────────────
         root.addWidget(self._stack)
 
-        # ── Durum çubuğu ──────────────────────────────────────────────────
+        # ── Durum çubuğu — Hafta 7 (önce kurulur ki _nav_sec mesaj gönderebilsin) ─
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
 
@@ -121,11 +122,99 @@ class MainWindow(QMainWindow):
         cikis_btn.clicked.connect(self._cikis)
         status_bar.addPermanentWidget(cikis_btn)
 
+        status_bar.showMessage("Hazır", 3000)
+        self._nav_sec(0)
+
+    # ── Menü Çubuğu (QMenuBar + QAction) — Hafta 7 ────────────────────────
+    def _menu_olustur(self):
+        menubar = self.menuBar()
+        menubar.setStyleSheet("""
+            QMenuBar {
+                background-color: #ffffff;
+                border-bottom: 1px solid #e0e3e5;
+                padding: 4px 8px;
+                color: #191c1e;
+                font-size: 12px;
+            }
+            QMenuBar::item {
+                background: transparent;
+                padding: 6px 12px;
+                border-radius: 6px;
+            }
+            QMenuBar::item:selected {
+                background-color: #eef2ff;
+                color: #003d9b;
+            }
+            QMenu {
+                background-color: #ffffff;
+                border: 1px solid #e0e3e5;
+                border-radius: 8px;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 6px 24px 6px 12px;
+                border-radius: 6px;
+            }
+            QMenu::item:selected {
+                background-color: #eef2ff;
+                color: #003d9b;
+            }
+        """)
+
+        # Dosya menüsü
+        dosya_menu = menubar.addMenu("&Dosya")
+
+        yenile_action = QAction("Yenile", self)
+        yenile_action.setShortcut(QKeySequence("F5"))
+        yenile_action.triggered.connect(self._aktif_view_yenile)
+        dosya_menu.addAction(yenile_action)
+
+        dosya_menu.addSeparator()
+
+        cikis_action = QAction("Çıkış", self)
+        cikis_action.setShortcut(QKeySequence("Ctrl+Q"))
+        cikis_action.triggered.connect(self._cikis)
+        dosya_menu.addAction(cikis_action)
+
+        # Görünüm menüsü
+        gorunum_menu = menubar.addMenu("&Görünüm")
+        for i, (baslik, _) in enumerate(_MENU_OGELER):
+            act = QAction(baslik.strip(), self)
+            act.setShortcut(QKeySequence(f"Ctrl+{i+1}"))
+            act.triggered.connect(lambda checked=False, idx=i: self._nav_sec(idx))
+            gorunum_menu.addAction(act)
+
+        # Yardım menüsü
+        yardim_menu = menubar.addMenu("&Yardım")
+
+        hakkinda_action = QAction("Hakkında", self)
+        hakkinda_action.triggered.connect(self._hakkinda_goster)
+        yardim_menu.addAction(hakkinda_action)
+
+    def _aktif_view_yenile(self):
+        view = self._stack.currentWidget()
+        if hasattr(view, "yukle"):
+            view.yukle()
+            self.statusBar().showMessage("Veriler yenilendi ✓", 2000)
+
+    def _hakkinda_goster(self):
+        QMessageBox.about(
+            self,
+            "Hakkında",
+            "<h3>Dijital Lastik Servisi</h3>"
+            "<p>Sürüm: <b>1.0</b></p>"
+            "<p>Lastik satış ve servis işletmesi yönetim sistemi.</p>"
+            "<p style='color:#737685;'>© 2026</p>",
+        )
+
     def _nav_sec(self, idx: int):
         self._stack.setCurrentIndex(idx)
         for i, btn in enumerate(self._nav_butonlar):
             btn.setChecked(i == idx)
             btn.setStyleSheet(self._nav_btn_stili(i == idx))
+        # statusBar mesajı — Hafta 7
+        baslik = _MENU_OGELER[idx][0].strip()
+        self.statusBar().showMessage(f"{baslik} açıldı", 2000)
 
     @staticmethod
     def _nav_btn_stili(secili: bool) -> str:

@@ -297,6 +297,30 @@ QCheckBox::indicator:hover {{
     border-color: {C['primary']};
 }}
 
+/* ── Radio Button ───────────────────────────────────────────────────────── */
+QRadioButton {{
+    color: {C['text_md']};
+    spacing: 8px;
+    background: transparent;
+}}
+
+QRadioButton::indicator {{
+    width: 17px;
+    height: 17px;
+    border-radius: 9px;
+    border: 1.5px solid {C['border']};
+    background: {C['surface']};
+}}
+
+QRadioButton::indicator:checked {{
+    background-color: {C['primary']};
+    border-color: {C['primary']};
+}}
+
+QRadioButton::indicator:hover {{
+    border-color: {C['primary']};
+}}
+
 /* ── Frame / Kart ───────────────────────────────────────────────────────── */
 QFrame[role="card"] {{
     background-color: {C['surface']};
