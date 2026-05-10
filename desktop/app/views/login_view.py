@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QFrame,
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
@@ -59,18 +59,20 @@ class LoginView(QWidget):
 
     def _build_ui(self):
         self.setWindowTitle("Dijital Lastik Servisi")
-        self.setFixedSize(420, 520)
+        self.setFixedSize(420, 540)
         self.setStyleSheet("background:#f7f9fb;")
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(8)
         outer.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Merkezi kart
+        # Merkezi kart — sadece QFrame#loginKart'a uygulansın diye objectName
         kart = QFrame()
+        kart.setObjectName("loginKart")
         kart.setFixedWidth(360)
         kart.setStyleSheet("""
-            QFrame {
+            QFrame#loginKart {
                 background: #ffffff;
                 border-radius: 16px;
                 border: 1px solid #e0e3e5;
@@ -85,42 +87,52 @@ class LoginView(QWidget):
         kart.setGraphicsEffect(eff)
 
         kart_layout = QVBoxLayout(kart)
-        kart_layout.setContentsMargins(36, 36, 36, 36)
+        kart_layout.setContentsMargins(36, 32, 36, 32)
         kart_layout.setSpacing(14)
-        kart_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Logo
         logo = QLabel("🔧")
         logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        logo.setFixedSize(80, 80)
         logo.setStyleSheet(
-            "font-size:38px; background:#eef2ff; border-radius:14px;"
-            "padding:10px 0; border:none;"
+            "font-size:38px; background:#eef2ff; border-radius:18px;"
+            "border:none; color:#003d9b;"
         )
-        logo.setFixedHeight(68)
-        kart_layout.addWidget(logo)
+        logo_wrap = QHBoxLayout()
+        logo_wrap.addStretch()
+        logo_wrap.addWidget(logo)
+        logo_wrap.addStretch()
+        kart_layout.addLayout(logo_wrap)
 
         # Başlık
         self.baslik_lbl = QLabel("Hoş Geldiniz")
         self.baslik_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.baslik_lbl.setFont(QFont("Inter", 17, QFont.Weight.Bold))
+        self.baslik_lbl.setFont(QFont("Inter", 18, QFont.Weight.Bold))
         self.baslik_lbl.setStyleSheet(
-            "color:#191c1e; border:none; background:transparent;")
+            "color:#191c1e; background:transparent; border:none;")
         kart_layout.addWidget(self.baslik_lbl)
 
         self.alt_baslik = QLabel("PIN kodunuzu girin")
         self.alt_baslik.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.alt_baslik.setStyleSheet(
-            "color:#505f76; font-size:13px; border:none; background:transparent;")
+            "color:#505f76; font-size:13px; background:transparent; border:none;")
         kart_layout.addWidget(self.alt_baslik)
 
-        # PIN giriş
+        kart_layout.addSpacing(8)
+
+        # PIN giriş — büyük, ortalanmış, kalın font
         self._pin_input = QLineEdit()
         self._pin_input.setPlaceholderText("• • • •")
         self._pin_input.setEchoMode(QLineEdit.EchoMode.Password)
         self._pin_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._pin_input.setMaxLength(4)
-        self._pin_input.setFixedHeight(50)
-        self._pin_input.setFont(QFont("Inter", 20))
+        self._pin_input.setFixedHeight(54)
+        self._pin_input.setFont(QFont("Inter", 22, QFont.Weight.Bold))
+        self._pin_input.setStyleSheet(
+            "QLineEdit { background:#f7f9fb; border:1.5px solid #e0e3e5;"
+            " border-radius:10px; color:#191c1e; letter-spacing:6px; }"
+            "QLineEdit:focus { border-color:#003d9b; background:#ffffff; }"
+        )
         self._pin_input.returnPressed.connect(self._giris)
         kart_layout.addWidget(self._pin_input)
 
@@ -130,15 +142,28 @@ class LoginView(QWidget):
         self._pin_tekrar_input.setEchoMode(QLineEdit.EchoMode.Password)
         self._pin_tekrar_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._pin_tekrar_input.setMaxLength(4)
-        self._pin_tekrar_input.setFixedHeight(44)
-        self._pin_tekrar_input.setFont(QFont("Inter", 16))
+        self._pin_tekrar_input.setFixedHeight(48)
+        self._pin_tekrar_input.setFont(QFont("Inter", 18, QFont.Weight.Bold))
+        self._pin_tekrar_input.setStyleSheet(
+            "QLineEdit { background:#f7f9fb; border:1.5px solid #e0e3e5;"
+            " border-radius:10px; color:#191c1e; letter-spacing:5px; }"
+            "QLineEdit:focus { border-color:#003d9b; background:#ffffff; }"
+        )
         self._pin_tekrar_input.setVisible(False)
         kart_layout.addWidget(self._pin_tekrar_input)
 
         # Giriş butonu
         self._giris_btn = QPushButton("Giriş Yap")
-        self._giris_btn.setFixedHeight(46)
+        self._giris_btn.setFixedHeight(48)
         self._giris_btn.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+        self._giris_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._giris_btn.setStyleSheet(
+            "QPushButton { background-color:#003d9b; color:#ffffff;"
+            " border:none; border-radius:10px; }"
+            "QPushButton:hover { background-color:#1a52ae; }"
+            "QPushButton:pressed { background-color:#002d7a; }"
+            "QPushButton:disabled { background-color:#bcc4d3; color:#ffffff; }"
+        )
         self._giris_btn.clicked.connect(self._giris)
         kart_layout.addWidget(self._giris_btn)
 
@@ -148,12 +173,14 @@ class LoginView(QWidget):
         self._hata_label.setWordWrap(True)
         self._hata_label.setStyleSheet(
             "color:#dc2626; background:#fee2e2; border-radius:8px;"
-            "padding:8px; font-size:12px; border:none;"
+            "padding:8px 10px; font-size:12px; border:none;"
         )
         self._hata_label.hide()
         kart_layout.addWidget(self._hata_label)
 
+        outer.addStretch()
         outer.addWidget(kart, alignment=Qt.AlignmentFlag.AlignCenter)
+        outer.addStretch()
 
         alt = QLabel("Dijital Lastik Servisi")
         alt.setAlignment(Qt.AlignmentFlag.AlignCenter)
