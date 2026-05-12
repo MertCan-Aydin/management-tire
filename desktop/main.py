@@ -26,6 +26,7 @@ def main():
         pencere.hide()
         main_win = MainWindow()
         main_win.show()
+        main_win.statusBar().showMessage("Hoş geldiniz, Admin ✓", 4000)
         app._main_win = main_win
 
     pencere = LoginView()

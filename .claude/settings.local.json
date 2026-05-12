@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(flutter pub *)",
-      "Bash(dart run *)"
+      "Bash(dart run *)",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(flutter analyze *)"
     ]
   }
 }

@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QFrame,
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
@@ -178,6 +178,16 @@ class LoginView(QWidget):
         self._hata_label.hide()
         kart_layout.addWidget(self._hata_label)
 
+        # Başarı etiketi — yeşil
+        self._basari_label = QLabel("")
+        self._basari_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._basari_label.setStyleSheet(
+            "color:#16a34a; background:#dcfce7; border-radius:8px;"
+            "padding:8px 10px; font-size:13px; font-weight:600; border:none;"
+        )
+        self._basari_label.hide()
+        kart_layout.addWidget(self._basari_label)
+
         outer.addStretch()
         outer.addWidget(kart, alignment=Qt.AlignmentFlag.AlignCenter)
         outer.addStretch()
@@ -255,7 +265,16 @@ class LoginView(QWidget):
 
     def _on_basarili(self, data: dict):
         save_tokens(data["access_token"], data["refresh_token"])
-        self.giris_yapildi.emit()
+        # Görsel onay — kısa süre yeşil mesaj göster, sonra ana pencereye geç
+        mesaj = "✓  Kurulum tamamlandı, açılıyor…" if self._is_setup_mode \
+                else "✓  Giriş başarılı, açılıyor…"
+        self._basari_label.setText(mesaj)
+        self._basari_label.show()
+        self._hata_label.hide()
+        self._giris_btn.setEnabled(False)
+        self._giris_btn.setText("Açılıyor…")
+        # 600 ms sonra ana pencereye geç
+        QTimer.singleShot(600, self.giris_yapildi.emit)
 
     def _on_hata(self, mesaj: str):
         self._hata_label.setText(mesaj)
