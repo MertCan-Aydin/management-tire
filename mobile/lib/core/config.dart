@@ -1,2 +1,2 @@
-const String kApiBaseUrl = 'http://45.39.241.111';
+const String kApiBaseUrl = 'http://194.36.85.139';
 const String kAppName = 'Dijital Lastik Servisi';

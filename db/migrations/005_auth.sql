@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS refresh_tokenlar (
     FOREIGN KEY (kullanici_id) REFERENCES kullanicilar(id)
 );
 
-CREATE INDEX idx_refresh_tokenlar_kullanici ON refresh_tokenlar(kullanici_id);
-CREATE INDEX idx_refresh_tokenlar_son_kullanma ON refresh_tokenlar(son_kullanma_tarihi);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokenlar_kullanici ON refresh_tokenlar(kullanici_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokenlar_son_kullanma ON refresh_tokenlar(son_kullanma_tarihi);
 
 -- ###############################################
 -- AUTH STORED PROCEDURE'LERİ
