@@ -15,7 +15,7 @@
 ## 1. VPS'e Bağlan
 
 ```bash
-ssh root@45.39.241.111
+ssh root@194.36.85.139
 ```
 
 ---
@@ -171,7 +171,7 @@ apt install -y nginx certbot python3-certbot-nginx
 cp /opt/management-tire/deploy/nginx/management-tire.conf /etc/nginx/sites-available/management-tire.conf
 
 # Config içindeki `server_name _` satırını IP veya domain ile değiştir
-# Domain yoksa IP kullan: server_name 45.39.241.111;
+# Domain yoksa IP kullan: server_name 194.36.85.139;
 nano /etc/nginx/sites-available/management-tire.conf
 
 # Aktifleştir
@@ -190,7 +190,7 @@ nginx.conf içindeki SSL bölümünü kaldır, sadece 80 portu üzerinden çalı
 ```nginx
 server {
     listen 80;
-    server_name 45.39.241.111;
+    server_name 194.36.85.139;
     location / {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
@@ -226,13 +226,13 @@ bash deploy/scripts/deploy.sh
 
 ```bash
 # Swagger UI (sadece APP_DEBUG=true ise açık)
-# http://45.39.241.111/docs
+# http://194.36.85.139/docs
 
 # Sağlık kontrolü
-curl http://45.39.241.111/health
+curl http://194.36.85.139/health
 
 # Login testi
-curl -X POST http://45.39.241.111/api/auth/giris \
+curl -X POST http://194.36.85.139/api/auth/giris \
   -d "username=KULLANICI_ADINIZ&password=PAROLANIZ"
 ```
 
@@ -243,11 +243,11 @@ curl -X POST http://45.39.241.111/api/auth/giris \
 ### Masaüstü (PyQt6)
 ```
 desktop/.env dosyasını oluştur:
-API_BASE_URL=http://45.39.241.111   (HTTPS varsa https://)
+API_BASE_URL=http://194.36.85.139   (HTTPS varsa https://)
 ```
 
 ### Mobil (Flutter)
 ```
 mobile/lib/core/config.dart dosyasında:
-const String kApiBaseUrl = 'http://45.39.241.111';
+const String kApiBaseUrl = 'http://194.36.85.139';
 ```
