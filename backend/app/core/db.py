@@ -17,6 +17,9 @@ def _new_connection() -> pymysql.Connection:
         charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor,
         autocommit=False,
+        # Tarihler (DEFAULT CURRENT_TIMESTAMP, NOW(), CURDATE()) Türkiye
+        # saatiyle yazılsın/karşılaştırılsın; VPS UTC'de olsa bile.
+        init_command="SET time_zone = '+03:00'",
     )
 
 
