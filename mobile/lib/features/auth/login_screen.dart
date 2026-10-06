@@ -1,8 +1,13 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/api.dart';
 import '../../core/api_client.dart';
+import '../../core/config.dart';
+import '../../core/format.dart';
 import '../../core/token_store.dart';
+import '../../ui/bilesenler.dart';
+import '../../ui/tema.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -20,6 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _yukleniyor = true;
   bool _isleniyor = false;
   String? _hata;
+  String? _baglantiHatasi;
+  final _odak = FocusNode();
 
   @override
   void initState() {
@@ -27,14 +34,29 @@ class _LoginScreenState extends State<LoginScreen> {
     _setupDurumuKontrol();
   }
 
+  @override
+  void dispose() {
+    _odak.dispose();
+    super.dispose();
+  }
+
   Future<void> _setupDurumuKontrol() async {
-    setState(() { _yukleniyor = true; _hata = null; });
+    setState(() {
+      _yukleniyor = true;
+      _baglantiHatasi = null;
+    });
     try {
-      final data = await ApiClient.instance.get('/api/auth/setup-durumu');
-      final kurulu = (data as Map<String, dynamic>)['kurulu_mu'] as bool? ?? false;
-      setState(() { _setupModu = !kurulu; _yukleniyor = false; });
+      final kurulu = await AuthApi.kuruluMu();
+      setState(() {
+        _setupModu = !kurulu;
+        _yukleniyor = false;
+      });
+      _odak.requestFocus();
     } catch (e) {
-      setState(() { _hata = 'Sunucuya bağlanılamıyor'; _yukleniyor = false; });
+      setState(() {
+        _baglantiHatasi = hataMesaji(e);
+        _yukleniyor = false;
+      });
     }
   }
 
@@ -70,10 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
           // Geri dön, ilk PIN girişine
           _ilkPinGirildi = false;
         }
-      } else {
-        if (_pin.isNotEmpty) {
-          _pin = _pin.substring(0, _pin.length - 1);
-        }
+      } else if (_pin.isNotEmpty) {
+        _pin = _pin.substring(0, _pin.length - 1);
       }
     });
   }
@@ -83,11 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (_setupModu) {
       if (!_ilkPinGirildi) {
-        // İlk PIN girildi, tekrar bekleniyor
-        setState(() { _ilkPinGirildi = true; });
+        setState(() => _ilkPinGirildi = true);
         return;
       }
-      // Tekrar girişi kontrol
       if (_pin != _pinTekrar) {
         HapticFeedback.heavyImpact();
         setState(() {
@@ -98,56 +116,26 @@ class _LoginScreenState extends State<LoginScreen> {
         });
         return;
       }
-      await _pinKurulum();
+      await _girisYap(() => AuthApi.pinKurulum(_pin), kurulum: true);
     } else {
-      await _pinGiris();
+      await _girisYap(() => AuthApi.pinGiris(_pin), kurulum: false);
     }
   }
 
-  Future<void> _pinGiris() async {
-    setState(() { _isleniyor = true; _hata = null; });
+  Future<void> _girisYap(Future<Json> Function() istek, {required bool kurulum}) async {
+    setState(() {
+      _isleniyor = true;
+      _hata = null;
+    });
     try {
-      final data = await ApiClient.instance.post(
-        '/api/auth/pin-giris',
-        data: {'pin': _pin},
-      );
-      await TokenStore.saveTokens(
-        (data as Map<String, dynamic>)['access_token'] as String,
-        data['refresh_token'] as String,
-      );
+      final data = await istek();
+      await TokenStore.saveTokens(data['access_token'] as String, data['refresh_token'] as String);
       widget.onLoginSuccess();
-    } on DioException catch (e) {
+    } catch (e) {
       HapticFeedback.heavyImpact();
+      final kod = hataKodu(e);
       setState(() {
-        _hata = 'Hatalı PIN';
-        _pin = '';
-        _isleniyor = false;
-      });
-    } catch (_) {
-      setState(() {
-        _hata = 'Bağlantı hatası';
-        _pin = '';
-        _isleniyor = false;
-      });
-    }
-  }
-
-  Future<void> _pinKurulum() async {
-    setState(() { _isleniyor = true; _hata = null; });
-    try {
-      final data = await ApiClient.instance.post(
-        '/api/auth/pin-kurulum',
-        data: {'pin': _pin},
-      );
-      await TokenStore.saveTokens(
-        (data as Map<String, dynamic>)['access_token'] as String,
-        data['refresh_token'] as String,
-      );
-      widget.onLoginSuccess();
-    } on DioException catch (e) {
-      final detay = (e.error as ApiError?)?.detail ?? 'Hata oluştu';
-      setState(() {
-        _hata = detay;
+        _hata = kurulum ? hataMesaji(e) : (kod == 401 || kod == 400 ? 'Hatalı PIN' : hataMesaji(e));
         _pin = '';
         _pinTekrar = '';
         _ilkPinGirildi = false;
@@ -156,106 +144,96 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  KeyEventResult _klavye(FocusNode _, KeyEvent e) {
+    if (e is! KeyDownEvent) return KeyEventResult.ignored;
+    final k = e.character;
+    if (k != null && RegExp(r'^\d$').hasMatch(k)) {
+      _tusaBasildi(k);
+      return KeyEventResult.handled;
+    }
+    if (e.logicalKey == LogicalKeyboardKey.backspace) {
+      _silTus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_yukleniyor) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    if (_yukleniyor) return const Scaffold(body: Yukleniyor());
 
-    if (_hata != null && !_isleniyor && _pin.isEmpty && _pinTekrar.isEmpty) {
-      return Scaffold(
-        body: Center(child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_hata!, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _setupDurumuKontrol,
-              child: const Text('Tekrar Dene'),
-            ),
-          ],
-        )),
-      );
+    if (_baglantiHatasi != null) {
+      return Scaffold(body: HataDurum(_baglantiHatasi!, _setupDurumuKontrol));
     }
 
     final aktifPin = _ilkPinGirildi ? _pinTekrar : _pin;
+    final r = context.renk;
 
-    String baslik;
-    String altBaslik;
+    final String baslik;
+    final String altBaslik;
     if (_setupModu) {
       baslik = 'PIN Oluştur';
-      altBaslik = _ilkPinGirildi
-          ? 'PIN\'i tekrar girin'
-          : '4 haneli yeni PIN belirleyin';
+      altBaslik = _ilkPinGirildi ? 'PIN\'i tekrar girin' : '4 haneli yeni PIN belirleyin';
     } else {
       baslik = 'Hoş Geldiniz';
       altBaslik = 'PIN kodunuzu girin';
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            children: [
-              const Spacer(),
-              // Başlık
-              Text(baslik, style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              )),
-              const SizedBox(height: 8),
-              Text(altBaslik, style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey,
-              )),
-              const SizedBox(height: 40),
-
-              // 4 Nokta Göstergesi
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (i) {
-                  final dolu = i < aktifPin.length;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    margin: const EdgeInsets.symmetric(horizontal: 10),
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _hata != null
-                          ? Colors.red
-                          : dolu
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade300,
-                      border: Border.all(
-                        color: dolu
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey.shade400,
-                        width: 1.5,
-                      ),
+      body: Focus(
+        focusNode: _odak,
+        autofocus: true,
+        onKeyEvent: _klavye,
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 340),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.asset('assets/icon/icon.png', width: 76, height: 76),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(kAppName, style: context.yazi.labelMedium),
+                  const SizedBox(height: 22),
+                  Text(baslik, style: context.yazi.headlineMedium),
+                  const SizedBox(height: 6),
+                  Text(altBaslik, style: context.yazi.bodyMedium?.copyWith(color: r.ikincil)),
+                  const SizedBox(height: 28),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(4, (i) {
+                      final dolu = i < aktifPin.length;
+                      final renk = _hata != null ? r.tehlike : r.metin;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: const EdgeInsets.symmetric(horizontal: 11),
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: dolu ? renk : Colors.transparent,
+                          border: Border.all(color: renk, width: 1.4),
+                        ),
+                      );
+                    }),
+                  ),
+                  SizedBox(
+                    height: 44,
+                    child: Center(
+                      child: _isleniyor
+                          ? const CupertinoActivityIndicator()
+                          : _hata != null
+                              ? Text(_hata!, style: context.yazi.bodyMedium?.copyWith(color: r.tehlike))
+                              : null,
                     ),
-                  );
-                }),
+                  ),
+                  _Numpad(onTus: _tusaBasildi, onSil: _silTus, isleniyor: _isleniyor),
+                ]),
               ),
-
-              if (_hata != null) ...[
-                const SizedBox(height: 16),
-                Text(_hata!, style: const TextStyle(color: Colors.red, fontSize: 13)),
-              ],
-
-              const Spacer(),
-
-              // Numpad
-              _Numpad(
-                onTus: _tusaBasildi,
-                onSil: _silTus,
-                isleniyor: _isleniyor,
-              ),
-
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ),
@@ -272,7 +250,7 @@ class _Numpad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tuslar = [
+    const tuslar = [
       ['1', '2', '3'],
       ['4', '5', '6'],
       ['7', '8', '9'],
@@ -280,59 +258,63 @@ class _Numpad extends StatelessWidget {
     ];
 
     return Column(
-      children: tuslar.map((satir) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: satir.map((tus) {
-            if (tus.isEmpty) return const SizedBox(width: 80, height: 80);
-            return _Tus(
-              etiket: tus,
-              onTap: () {
-                if (isleniyor) return;
-                HapticFeedback.lightImpact();
-                if (tus == 'DEL') {
-                  onSil();
-                } else {
-                  onTus(tus);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      )).toList(),
+      children: tuslar
+          .map((satir) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: satir.map((tus) {
+                    if (tus.isEmpty) return const SizedBox(width: 78, height: 78);
+                    return _Tus(
+                      etiket: tus,
+                      onTap: () {
+                        if (isleniyor) return;
+                        HapticFeedback.lightImpact();
+                        tus == 'DEL' ? onSil() : onTus(tus);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ))
+          .toList(),
     );
   }
 }
 
-class _Tus extends StatelessWidget {
+class _Tus extends StatefulWidget {
   final String etiket;
   final VoidCallback onTap;
-
   const _Tus({required this.etiket, required this.onTap});
 
   @override
+  State<_Tus> createState() => _TusState();
+}
+
+class _TusState extends State<_Tus> {
+  bool _basili = false;
+
+  @override
   Widget build(BuildContext context) {
-    final silTus = etiket == 'DEL';
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(40),
-      child: Container(
-        width: 80,
-        height: 80,
+    final silTus = widget.etiket == 'DEL';
+    final r = context.renk;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _basili = true),
+      onTapUp: (_) => setState(() => _basili = false),
+      onTapCancel: () => setState(() => _basili = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 90),
+        width: 78,
+        height: 78,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: silTus
-              ? Colors.transparent
-              : Theme.of(context).colorScheme.surfaceVariant,
+          color: silTus ? Colors.transparent : (_basili ? r.ucuncul : r.kart),
         ),
         child: Center(
           child: silTus
-              ? const Icon(Icons.backspace_outlined, size: 24)
-              : Text(
-                  etiket,
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w500),
-                ),
+              ? Icon(CupertinoIcons.delete_left, size: 28, color: r.metin)
+              : Text(widget.etiket,
+                  style: TextStyle(fontFamily: kFont, fontSize: 32, fontWeight: FontWeight.w400, color: r.metin)),
         ),
       ),
     );

@@ -1,17 +1,24 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../core/api.dart';
 import '../../core/api_client.dart';
 import '../../core/eprel_client.dart';
+import '../../ui/tema.dart';
 
-/// Telefon kamerasıyla barkod / QR okur.
+/// Kamerayla barkod / QR okur.
 ///
 /// [eprelDestekli] = true → EPREL EU etiket URL'lerini tanır, EPREL API'den
 /// ürün bilgisi çeker ve {'tip':'eprel', ...} map'i döner.
-/// [eprelDestekli] = false (varsayılan) → yalnızca kendi DB'mizde arar.
+/// [hamDeger] = true → hiçbir arama yapmadan {'rawValue': ...} döner
+/// (raf kodu, yeni ürünün barkodu vb.).
+/// Varsayılan → yalnızca kendi DB'mizde ürün arar ve ürünü döner.
 class BarkodScreen extends StatefulWidget {
   final bool eprelDestekli;
-  const BarkodScreen({this.eprelDestekli = false, super.key});
+  final bool hamDeger;
+  final String? ipucu;
+  const BarkodScreen({this.eprelDestekli = false, this.hamDeger = false, this.ipucu, super.key});
 
   @override
   State<BarkodScreen> createState() => _BarkodScreenState();
@@ -20,6 +27,7 @@ class BarkodScreen extends StatefulWidget {
 class _BarkodScreenState extends State<BarkodScreen> {
   final MobileScannerController _ctrl = MobileScannerController();
   bool _isleniyor = false;
+  String? _mesaj;
 
   @override
   void dispose() {
@@ -29,36 +37,39 @@ class _BarkodScreenState extends State<BarkodScreen> {
 
   Future<void> _barkodOkundu(BarcodeCapture capture) async {
     if (_isleniyor) return;
-    final barkod = capture.barcodes.firstOrNull?.rawValue;
+    final barkod = capture.barcodes.firstOrNull?.rawValue?.trim();
     if (barkod == null || barkod.isEmpty) return;
 
-    setState(() => _isleniyor = true);
-    _ctrl.stop();
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isleniyor = true;
+      _mesaj = null;
+    });
 
-    debugPrint('=== BARKOD OKUNDU: $barkod');
-
-    // EPREL URL mi?
-    if (widget.eprelDestekli) {
-      final eprelNo = EprelClient.parseEprelNo(barkod);
-      debugPrint('=== EPREL NO: $eprelNo');
-      if (eprelNo != null) {
-        await _eprelIsle(eprelNo);
-        return;
-      }
+    if (widget.hamDeger) {
+      Navigator.of(context).pop({'rawValue': barkod});
+      return;
     }
 
-    // Normal barkod — kendi DB'mize bak
+    _ctrl.stop();
+
+    // EPREL URL mi?
+    final eprelNo = EprelClient.parseEprelNo(barkod);
+    if (widget.eprelDestekli && eprelNo != null) {
+      await _eprelIsle(eprelNo);
+      return;
+    }
+
+    // Kendi DB'mize bak. EPREL'den kaydedilen ürünlerin barkod_qr alanında
+    // URL değil yalnızca EPREL numarası tutulur.
     try {
-      final urun = await ApiClient.instance.get('/api/urunler/barkod/$barkod');
+      final urun = await UrunApi.barkod(eprelNo ?? barkod);
       if (!mounted) return;
       Navigator.of(context).pop(urun);
-    } on DioException {
+    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ürün bulunamadı.\nBarkod: ${barkod.length > 50 ? '${barkod.substring(0, 50)}...' : barkod}')),
-      );
-      _ctrl.start();
-      setState(() => _isleniyor = false);
+      final kisa = barkod.length > 40 ? '${barkod.substring(0, 40)}…' : barkod;
+      _devamEt(hataKodu(e) == 404 ? 'Ürün bulunamadı\n$kisa' : hataMesaji(e));
     }
   }
 
@@ -69,71 +80,120 @@ class _BarkodScreenState extends State<BarkodScreen> {
       Navigator.of(context).pop(eprel.toMap());
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('EPREL verisi alınamadı: $e')),
-      );
-      _ctrl.start();
-      setState(() => _isleniyor = false);
+      _devamEt('EPREL verisi alınamadı');
     }
+  }
+
+  void _devamEt(String mesaj) {
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _mesaj = mesaj;
+      _isleniyor = false;
+    });
+    _ctrl.start();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Barkod / QR Okut'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.flash_on),
-            onPressed: _ctrl.toggleTorch,
-            tooltip: 'Flaş',
-          ),
-          IconButton(
-            icon: const Icon(Icons.flip_camera_ios),
-            onPressed: _ctrl.switchCamera,
-            tooltip: 'Kamera değiştir',
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _ctrl,
-            onDetect: _barkodOkundu,
-          ),
-          Center(
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.green, width: 2),
-                borderRadius: BorderRadius.circular(8),
+    final ipucu = widget.ipucu ??
+        (widget.eprelDestekli
+            ? 'Ürün barkodunu ya da EU lastik etiketindeki QR\'ı çerçeveye getirin'
+            : 'Barkodu veya QR kodu çerçeveye getirin');
+    return AnnotatedRegion(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(fit: StackFit.expand, children: [
+          MobileScanner(controller: _ctrl, onDetect: _barkodOkundu),
+          // Çerçeve dışını karart
+          IgnorePointer(child: CustomPaint(painter: _CerceveBoyaci())),
+          SafeArea(
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(children: [
+                  CupertinoButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Kapat', style: TextStyle(fontFamily: kFont, color: Colors.white, fontSize: 17)),
+                  ),
+                  const Spacer(),
+                  _YuvarlakDugme(ikon: CupertinoIcons.bolt_fill, onTap: _ctrl.toggleTorch),
+                  const SizedBox(width: 10),
+                  _YuvarlakDugme(ikon: CupertinoIcons.camera_rotate_fill, onTap: _ctrl.switchCamera),
+                  const SizedBox(width: 8),
+                ]),
               ),
-            ),
-          ),
-          if (_isleniyor)
-            const Center(child: CircularProgressIndicator()),
-          if (widget.eprelDestekli)
-            Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'EU lastik etiketindeki QR\'ı okutun',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _isleniyor
+                      ? const CupertinoActivityIndicator(color: Colors.white, radius: 14)
+                      : Container(
+                          key: ValueKey(_mesaj),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _mesaj != null ? const Color(0xE6FF3B30) : const Color(0x99000000),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            _mesaj ?? ipucu,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                fontFamily: kFont, color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                          ),
+                        ),
                 ),
               ),
-            ),
-        ],
+            ]),
+          ),
+        ]),
       ),
     );
   }
+}
+
+class _YuvarlakDugme extends StatelessWidget {
+  final IconData ikon;
+  final VoidCallback onTap;
+  const _YuvarlakDugme({required this.ikon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(color: Color(0x66000000), shape: BoxShape.circle),
+          child: Icon(ikon, color: Colors.white, size: 22),
+        ),
+      );
+}
+
+class _CerceveBoyaci extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final kenar = (size.shortestSide * 0.62).clamp(220.0, 360.0);
+    final cerceve = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: size.center(Offset.zero), width: kenar, height: kenar),
+      const Radius.circular(22),
+    );
+    final disi = Path()
+      ..addRect(Offset.zero & size)
+      ..addRRect(cerceve)
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(disi, Paint()..color = const Color(0x8C000000));
+    canvas.drawRRect(
+      cerceve,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

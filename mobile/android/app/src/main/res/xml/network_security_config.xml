@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sunucunun henüz alan adı / HTTPS sertifikası yok, IP üzerinden HTTP ile
+  bağlanılıyor. Şifresiz trafiğe YALNIZCA bu IP için izin verilir; diğer
+  tüm adresler (EPREL vb.) HTTPS zorunlu kalır.
+  Alan adı + Let's Encrypt kurulunca bu dosya ve manifest'teki
+  networkSecurityConfig satırı silinmeli, config.dart https:// olmalı.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">194.36.85.139</domain>
+    </domain-config>
+</network-security-config>

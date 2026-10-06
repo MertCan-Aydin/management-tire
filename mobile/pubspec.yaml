@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # HTTP
   dio: ^5.4.0
@@ -17,7 +19,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
 
   # Barkod / QR kamera okuma
-  mobile_scanner: ^5.1.0
+  mobile_scanner: ^7.0.0
 
   # State management
   flutter_riverpod: ^2.5.0
@@ -27,6 +29,13 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.6
+
+  # Tarih / para biçimi (Türkçe)
+  intl: any
+
+  # Rapor PDF çıktısı ve yazdırma
+  pdf: ^3.12.0
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:
@@ -38,6 +47,21 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/
+    - assets/fonts/
+
+  # Inter (SIL Open Font License — assets/fonts/OFL.txt). Arayüz ve PDF'te
+  # Türkçe karakterler için.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
 flutter_launcher_icons:
   android: "ic_launcher"

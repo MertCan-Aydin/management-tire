@@ -55,10 +55,9 @@ class EprelClient {
     final mevsim = (iceTyre || severeSnow) ? 'Kış' : 'Yaz';
 
     final details = data['additionalDetails'] as Map<String, dynamic>?;
-    final modelAd =
-        (details?['commercialName'] as String?)?.trim().isNotEmpty == true
-            ? (details!['commercialName'] as String).trim()
-            : (data['modelIdentifier'] as String? ?? '').trim();
+    final modelAd = (details?['commercialName'] as String?)?.trim().isNotEmpty == true
+        ? (details!['commercialName'] as String).trim()
+        : (data['modelIdentifier'] as String? ?? '').trim();
 
     return EprelUrun(
       eprelNo: eprelNo,
