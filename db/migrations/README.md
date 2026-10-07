@@ -11,6 +11,7 @@ Sırayla çalıştırılacak. Her dosya bir kez uygulanır.
 | 005_auth.sql | Kullanıcı/token tabloları + auth SP'leri |
 | 006_raporlar.sql | Rapor ve dashboard SP'leri |
 | 011_musteri_pasif_silme.sql | Müşteri silme pasif (silindi_mi) hale getirilir; müşteri SP'leri ve dashboard özeti güncellenir |
+| 012_alim_iptal.sql | Alım iptali: sp_alimlar_sil kaydı silmez, iptal_mi = 1 yapar; stok ve tedarikçi borcu geri alınır, stok yetmiyorsa reddedilir |
 
 ## Uygulama
 

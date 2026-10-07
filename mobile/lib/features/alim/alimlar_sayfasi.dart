@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/api.dart';
+import '../../core/api_client.dart';
 import '../../core/format.dart';
 import '../../ui/bilesenler.dart';
 import '../../ui/liste_detay.dart';
@@ -122,6 +123,24 @@ class _AlimDetayState extends State<AlimDetay> with VeriYukleyici<AlimDetay, Jso
   @override
   Future<Json> getir() => AlimApi.getir(tamSayi(widget.alim['id']));
 
+  Future<void> _iptalEt(Json a) async {
+    final onay = await onayla(context,
+        baslik: 'Alımı İptal Et',
+        mesaj: '${para(a['toplam_tutar'])} tutarındaki alım iptal edilecek. '
+            'Ürünler stoktan düşülür ve tedarikçi borcu azaltılır. Bu işlem geri alınamaz.',
+        onayMetni: 'İptal Et',
+        yikici: true);
+    if (!onay || !mounted) return;
+    try {
+      await AlimApi.iptal(tamSayi(a['id']));
+      if (!mounted) return;
+      bildir(context, 'Alım iptal edildi');
+      veriDegisti();
+    } catch (e) {
+      if (mounted) bildir(context, hataMesaji(e), hata: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final a = {...widget.alim, ...?veri};
@@ -161,6 +180,7 @@ class _AlimDetayState extends State<AlimDetay> with VeriYukleyici<AlimDetay, Jso
           BilgiSatiri('Tarih', tarihSaat(a['tarih'])),
           BilgiSatiri('Toplam', para(a['toplam_tutar']), kalin: true, degerRengi: r.metin),
         ]),
+        if (!iptal && veri != null) Grup(children: [EylemSatiri('Alımı İptal Et', yikici: true, onTap: () => _iptalEt(a))]),
       ],
     );
   }

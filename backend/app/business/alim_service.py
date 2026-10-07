@@ -1,3 +1,4 @@
+import pymysql
 from fastapi import HTTPException
 
 from ..data_access import alim_dal
@@ -23,7 +24,13 @@ def ekle(cursor, data) -> int:
 
 def iptal(cursor, alim_id: int) -> None:
     _varmi(cursor, alim_id)
-    alim_dal.iptal(cursor, alim_id)
+    try:
+        alim_dal.iptal(cursor, alim_id)
+    except pymysql.err.OperationalError as e:
+        # SIGNAL SQLSTATE '45000' → 1644: zaten iptal / stok yetersiz
+        if e.args[0] == 1644:
+            raise HTTPException(status_code=409, detail=e.args[1])
+        raise
 
 
 def _varmi(cursor, alim_id: int):
