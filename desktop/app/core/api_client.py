@@ -107,8 +107,8 @@ def put(path: str, json: dict = None):
     return _request("PUT", path, json=json)
 
 
-def delete(path: str):
-    return _request("DELETE", path)
+def delete(path: str, params: dict = None):
+    return _request("DELETE", path, params=params)
 
 
 def login(kullanici_adi: str, parola: str) -> dict:

@@ -8,6 +8,7 @@ from ..dialogs.musteri_dialog import MusteriDialog
 class MusteriView(BaseListView):
     BASLIK = "Müşteriler"
     API_PATH = "/api/musteriler"
+    SIL_IPUCU = "Silmek için Delete"
     SUTUNLAR = ["Ad Soyad", "Telefon", "Araç Markası", "Plaka", "Notlar"]
 
     def _satira_donustur(self, row: dict) -> list:
@@ -28,3 +29,8 @@ class MusteriView(BaseListView):
         dlg = MusteriDialog(self, duzenleme=row)
         if dlg.exec():
             self.yukle()
+
+    def _sil(self, row: dict):
+        self._onayla_ve_sil(
+            f"'{row['ad_soyad']}' müşterisini silmek istiyor musunuz?",
+            f"/api/musteriler/{row['id']}", "Müşteri silindi")

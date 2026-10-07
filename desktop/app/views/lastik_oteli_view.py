@@ -13,6 +13,7 @@ from ..dialogs.lastik_oteli_dialog import LastikOteliDialog
 class LastikOteliView(BaseListView):
     BASLIK = "Lastik Oteli"
     API_PATH = "/api/lastik-oteli"
+    SIL_IPUCU = "Silmek için Delete"
     SUTUNLAR = ["Raf", "Müşteri", "Plaka", "Lastik Bilgisi", "Adet", "Sezon", "Giriş", "Durum"]
 
     def _satira_donustur(self, row: dict) -> list:
@@ -126,18 +127,7 @@ class LastikOteliView(BaseListView):
             except Exception as e:
                 QMessageBox.warning(self, "Hata", str(e))
 
-    def keyPressEvent(self, event):
-        from PyQt6.QtCore import Qt
-        if event.key() == Qt.Key.Key_Delete:
-            row = self._secili_satir()
-            if row and QMessageBox.question(
-                self, "Sil",
-                f"'{row['raf_kodu']} — {row['musteri_adi']}' kaydını silmek istiyor musunuz?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            ) == QMessageBox.StandardButton.Yes:
-                try:
-                    api_client.delete(f"/api/lastik-oteli/{row['id']}")
-                    self.yukle()
-                except Exception as e:
-                    QMessageBox.warning(self, "Hata", str(e))
-        super().keyPressEvent(event)
+    def _sil(self, row: dict):
+        self._onayla_ve_sil(
+            f"'{row['raf_kodu']} — {row['musteri_adi']}' kaydını silmek istiyor musunuz?",
+            f"/api/lastik-oteli/{row['id']}", "Kayıt silindi")

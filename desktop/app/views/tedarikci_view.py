@@ -8,6 +8,7 @@ from ..dialogs.tedarikci_dialog import TedarikciDialog, TedarikciOdemeDialog
 class TedarikciView(BaseListView):
     BASLIK = "Tedarikçiler"
     API_PATH = "/api/tedarikciler"
+    SIL_IPUCU = "Silmek için Delete"
     SUTUNLAR = ["Tedarikçi Adı", "İletişim", "Güncel Borç (₺)"]
 
     def _satira_donustur(self, row: dict) -> list:
@@ -46,3 +47,8 @@ class TedarikciView(BaseListView):
         dlg = TedarikciOdemeDialog(self, tedarikci_id=row["id"], tedarikci_adi=row["ad"])
         if dlg.exec():
             self.yukle()
+
+    def _sil(self, row: dict):
+        self._onayla_ve_sil(
+            f"'{row['ad']}' tedarikçisini silmek istiyor musunuz?",
+            f"/api/tedarikciler/{row['id']}", "Tedarikçi silindi")

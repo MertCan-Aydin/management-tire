@@ -36,10 +36,14 @@ class BaseListView(QWidget):
         _satira_donustur(row: dict) -> list[str]
         _ekle_dialogu()  -> None
         _duzenle_dialogu(row: dict) -> None
+    İsteğe bağlı:
+        SIL_IPUCU    : str — doluysa alt bilgide gösterilir, Delete tuşu _sil'i çağırır
+        _sil(row: dict) -> None
     """
     BASLIK = "Modül"
     SUTUNLAR: list[str] = []
     API_PATH = ""
+    SIL_IPUCU = ""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -184,8 +188,8 @@ class BaseListView(QWidget):
         self._satirlar = rows
         self._tablo_doldur(rows)
         sayi = len(rows)
-        self._bilgi_lbl.setText(
-            f"{sayi} kayıt  •  Düzenlemek için çift tıklayın  •  Silmek için Delete")
+        ipucu = f"  •  {self.SIL_IPUCU}" if self.SIL_IPUCU else ""
+        self._bilgi_lbl.setText(f"{sayi} kayıt  •  Ayrıntı için çift tıklayın{ipucu}")
         self._status_mesaj(f"{sayi} kayıt yüklendi", 1500)
 
     # statusBar yardımcısı — Hafta 7
@@ -241,3 +245,32 @@ class BaseListView(QWidget):
 
     def _duzenle_dialogu(self, row: dict):
         pass
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Delete and self.SIL_IPUCU:
+            row = self._secili_satir()
+            if row:
+                self._sil(row)
+            return
+        super().keyPressEvent(event)
+
+    def _sil(self, row: dict):
+        pass
+
+    def _onayla_ve_sil(self, soru: str, path: str, basari: str) -> bool:
+        """Evet/Hayır sorar, onaylanırsa DELETE atar ve listeyi yeniler."""
+        from ..core import api_client
+        if QMessageBox.question(
+            self, "Onay", soru,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        ) != QMessageBox.StandardButton.Yes:
+            return False
+        try:
+            api_client.delete(path)
+        except Exception as e:
+            QMessageBox.warning(self, "Hata", str(e))
+            return False
+        self._status_mesaj(basari, 2500)
+        self.yukle()
+        return True

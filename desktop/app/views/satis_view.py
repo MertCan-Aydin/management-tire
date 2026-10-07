@@ -8,6 +8,7 @@ from ..dialogs.satis_dialog import SatisDialog
 class SatisView(BaseListView):
     BASLIK = "Satışlar"
     API_PATH = "/api/satislar"
+    SIL_IPUCU = "İptal için Delete"
     SUTUNLAR = ["Tarih", "Müşteri", "Plaka", "Toplam (₺)", "İndirim (₺)", "Kâr (₺)", "Ödeme", "Durum"]
 
     def _satira_donustur(self, row: dict) -> list:
@@ -54,4 +55,48 @@ class SatisView(BaseListView):
             tablo.setItem(r, 2, QTableWidgetItem(_p(k.get('birim_fiyat', 0))))
             tablo.setItem(r, 3, QTableWidgetItem(_p(k.get('toplam_fiyat', 0))))
         lay.addWidget(tablo)
+        iptal_istendi = False
+        if not row.get("iptal_mi"):
+            from PyQt6.QtWidgets import QPushButton
+            btn = QPushButton("Satışı İptal Et")
+            btn.setObjectName("flat")
+            btn.setStyleSheet("color:#dc2626;")
+
+            def _iptal_tikla():
+                nonlocal iptal_istendi
+                iptal_istendi = True
+                dlg.accept()
+
+            btn.clicked.connect(_iptal_tikla)
+            lay.addWidget(btn)
         dlg.exec()
+        if iptal_istendi:
+            self._sil(row)
+
+    def _sil(self, row: dict):
+        if row.get("iptal_mi"):
+            QMessageBox.information(self, "Bilgi", "Bu satış zaten iptal edilmiş.")
+            return
+        kutu = QMessageBox(self)
+        kutu.setIcon(QMessageBox.Icon.Warning)
+        kutu.setWindowTitle("Satışı İptal Et")
+        kutu.setText("Satış ciro ve kâr hesaplarından çıkarılacak. Bu işlem geri alınamaz.")
+        kutu.setInformativeText(
+            "Ürünler kullanılmadıysa stoğa geri ekleyin. "
+            "Takıldıysa veya satılamayacak durumdaysa eklemeyin.")
+        stoga_ekle = kutu.addButton("İptal Et, Stoğa Geri Ekle", QMessageBox.ButtonRole.AcceptRole)
+        stoga_ekleme = kutu.addButton("İptal Et, Stoğa Ekleme", QMessageBox.ButtonRole.DestructiveRole)
+        kutu.addButton("Vazgeç", QMessageBox.ButtonRole.RejectRole)
+        kutu.setDefaultButton(stoga_ekle)
+        kutu.exec()
+        secilen = kutu.clickedButton()
+        if secilen not in (stoga_ekle, stoga_ekleme):
+            return
+        try:
+            api_client.delete(f"/api/satislar/{row['id']}",
+                              params={"stoga_ekle": "true" if secilen is stoga_ekle else "false"})
+        except Exception as e:
+            QMessageBox.warning(self, "Hata", str(e))
+            return
+        self._status_mesaj("Satış iptal edildi", 2500)
+        self.yukle()
