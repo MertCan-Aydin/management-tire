@@ -12,6 +12,7 @@ Sırayla çalıştırılacak. Her dosya bir kez uygulanır.
 | 006_raporlar.sql | Rapor ve dashboard SP'leri |
 | 011_musteri_pasif_silme.sql | Müşteri silme pasif (silindi_mi) hale getirilir; müşteri SP'leri ve dashboard özeti güncellenir |
 | 012_alim_iptal.sql | Alım iptali: sp_alimlar_sil kaydı silmez, iptal_mi = 1 yapar; stok ve tedarikçi borcu geri alınır, stok yetmiyorsa reddedilir |
+| 013_satis_iptal.sql | Satış iptalinde stoğa geri ekleme seçeneği (sp_satislar_sil imzası değişti, API ile birlikte uygulanmalı); kullanılmayan sp_satis_kalemleri_sil kaldırıldı |
 
 ## Uygulama
 

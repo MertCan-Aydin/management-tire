@@ -1,3 +1,4 @@
+import pymysql
 from fastapi import HTTPException
 
 from ..data_access import musteri_dal, satis_dal
@@ -23,13 +24,15 @@ def ekle(cursor, data) -> int:
     return satis_id
 
 
-def iptal(cursor, satis_id: int) -> None:
+def iptal(cursor, satis_id: int, stoga_ekle: bool) -> None:
     _varmi(cursor, satis_id)
-    satis_dal.iptal(cursor, satis_id)
-
-
-def kalem_iptal(cursor, kalem_id: int) -> None:
-    satis_dal.kalem_iptal(cursor, kalem_id)
+    try:
+        satis_dal.iptal(cursor, satis_id, stoga_ekle)
+    except pymysql.err.OperationalError as e:
+        # SIGNAL SQLSTATE '45000' → 1644: zaten iptal
+        if e.args[0] == 1644:
+            raise HTTPException(status_code=409, detail=e.args[1])
+        raise
 
 
 def _varmi(cursor, satis_id: int):

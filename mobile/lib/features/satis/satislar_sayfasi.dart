@@ -186,14 +186,35 @@ class _SatisDetayState extends State<SatisDetay> with VeriYukleyici<SatisDetay, 
   Future<Json> getir() => SatisApi.getir(_id);
 
   Future<void> _iptal() async {
-    final onay = await onayla(context,
-        baslik: 'Satışı İptal Et',
-        mesaj: 'Satış iptal olarak işaretlenecek ve ciro/kâr hesaplarından çıkarılacak. Stok otomatik geri eklenmez.',
-        onayMetni: 'İptal Et',
-        yikici: true);
-    if (!onay || !mounted) return;
+    // null → vazgeçildi, true → stoğa geri ekle, false → stoğa dokunma
+    final stogaEkle = await showCupertinoDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('Satışı İptal Et'),
+        content: const Padding(
+          padding: EdgeInsets.only(top: 4),
+          child: Text('Satış ciro ve kâr hesaplarından çıkarılacak. Bu işlem geri alınamaz.\n\n'
+              'Ürünler kullanılmadıysa stoğa geri ekleyin. Takıldıysa veya satılamayacak durumdaysa eklemeyin.'),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('İptal Et, Stoğa Geri Ekle'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('İptal Et, Stoğa Ekleme'),
+          ),
+          CupertinoDialogAction(onPressed: () => Navigator.pop(ctx), child: const Text('Vazgeç')),
+        ],
+      ),
+    );
+    if (stogaEkle == null || !mounted) return;
     try {
-      await SatisApi.iptal(_id);
+      await SatisApi.iptal(_id, stogaEkle: stogaEkle);
       veriDegisti();
       if (mounted) bildir(context, 'Satış iptal edildi');
     } catch (e) {

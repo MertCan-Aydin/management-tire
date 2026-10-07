@@ -54,8 +54,8 @@ class ApiClient {
     return resp.data;
   }
 
-  Future<void> delete(String path) async {
-    await _dio.delete(path);
+  Future<void> delete(String path, {Map<String, dynamic>? params}) async {
+    await _dio.delete(path, queryParameters: params);
   }
 }
 

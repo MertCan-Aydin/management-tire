@@ -14,8 +14,8 @@ def ekle(cursor, musteri_id, odeme_yontemi, toplam_tutar, toplam_maliyet, indiri
     return row["id"] if row else None
 
 
-def iptal(cursor, satis_id: int) -> None:
-    call_sp(cursor, "sp_satislar_sil", [satis_id])
+def iptal(cursor, satis_id: int, stoga_ekle: bool) -> None:
+    call_sp(cursor, "sp_satislar_sil", [satis_id, stoga_ekle])
 
 
 def kalem_ekle(cursor, satis_id, urun_id, urun_adi, miktar, birim_fiyat, birim_maliyet) -> int:
@@ -25,7 +25,3 @@ def kalem_ekle(cursor, satis_id, urun_id, urun_adi, miktar, birim_fiyat, birim_m
 
 def kalemler_listele(cursor, satis_id: int) -> list:
     return call_sp(cursor, "sp_satis_kalemleri_satisa_gore_listele", [satis_id])
-
-
-def kalem_iptal(cursor, kalem_id: int) -> None:
-    call_sp(cursor, "sp_satis_kalemleri_sil", [kalem_id])

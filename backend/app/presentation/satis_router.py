@@ -36,14 +36,7 @@ def ekle(body: SatisEkleRequest):
 
 
 @router.delete("/{satis_id}")
-def iptal(satis_id: int):
+def iptal(satis_id: int, stoga_ekle: bool = Query(True)):
     with get_cursor() as (cursor, _):
-        satis_service.iptal(cursor, satis_id)
+        satis_service.iptal(cursor, satis_id, stoga_ekle)
     return {"mesaj": "Satış iptal edildi"}
-
-
-@router.delete("/kalemler/{kalem_id}")
-def kalem_iptal(kalem_id: int):
-    with get_cursor() as (cursor, _):
-        satis_service.kalem_iptal(cursor, kalem_id)
-    return {"mesaj": "Kalem iptal edildi"}

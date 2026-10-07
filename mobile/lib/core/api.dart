@@ -91,7 +91,8 @@ class SatisApi {
       _liste('/api/satislar', {...?donem, if (musteriId != null) 'musteri_id': musteriId, 'limit': limit});
   static Future<Json> getir(int id) => _tek('/api/satislar/$id');
   static Future<void> ekle(Json v) => _c.post('/api/satislar', data: v);
-  static Future<void> iptal(int id) => _c.delete('/api/satislar/$id');
+  static Future<void> iptal(int id, {required bool stogaEkle}) =>
+      _c.delete('/api/satislar/$id', params: {'stoga_ekle': stogaEkle});
 }
 
 class GiderApi {
