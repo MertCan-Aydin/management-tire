@@ -10,6 +10,7 @@ Sırayla çalıştırılacak. Her dosya bir kez uygulanır.
 | 004_indexes.sql | Performans index'leri |
 | 005_auth.sql | Kullanıcı/token tabloları + auth SP'leri |
 | 006_raporlar.sql | Rapor ve dashboard SP'leri |
+| 011_musteri_pasif_silme.sql | Müşteri silme pasif (silindi_mi) hale getirilir; müşteri SP'leri ve dashboard özeti güncellenir |
 
 ## Uygulama
 
