@@ -1,0 +1,12 @@
+[Unit]
+Description=Dijital Lastik Servisi — 3 saatte bir MariaDB yedeği
+
+[Timer]
+# 00:00, 03:00, 06:00 ... 21:00 (sunucu saatine göre)
+OnCalendar=*-*-* 00/3:00:00
+# Sunucu kapalıyken kaçırılan yedek, açılınca hemen alınır
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

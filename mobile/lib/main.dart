@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'core/api_client.dart';
 import 'core/config.dart';
 import 'core/token_store.dart';
+import 'core/tutar_gizleme.dart';
 import 'features/auth/login_screen.dart';
 import 'app_shell.dart';
 import 'ui/tema.dart';
@@ -16,6 +17,7 @@ void main() async {
   Intl.defaultLocale = 'tr_TR';
   // Her açılışta önceki oturumu sil — PIN her seferinde sorulsun
   await TokenStore.clearTokens();
+  await tutarGizlemeYukle();
   runApp(const ProviderScope(child: DijitalLastikApp()));
 }
 

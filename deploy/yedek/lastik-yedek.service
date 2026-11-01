@@ -1,0 +1,13 @@
+[Unit]
+Description=Dijital Lastik Servisi — MariaDB yedeği (şifreli, GitHub)
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/lastik-yedekle
+# 2 = yedek alındı ama GitHub repo boyutu uyarısı var
+SuccessExitStatus=2
+Nice=10
+IOSchedulingClass=idle
+SyslogIdentifier=lastik-yedek

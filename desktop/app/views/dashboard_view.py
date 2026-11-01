@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QGridLayout, QFrame, QPushButton, QSizePolicy,
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSettings
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect
 
@@ -103,6 +103,10 @@ class DashboardView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._worker = None
+        self._veri: dict = {}
+        # Tutarları gizle/göster tercihi (mobildeki göz simgesiyle aynı); açılışlar arası saklanır
+        self._ayarlar = QSettings("DijitalLastik", "Masaustu")
+        self._gizli = self._ayarlar.value("tutarlar_gizli", False, type=bool)
         self._build_ui()
 
     def _build_ui(self):
@@ -117,6 +121,12 @@ class DashboardView(QWidget):
         baslik.setStyleSheet("color:#191c1e;")
         ust.addWidget(baslik)
         ust.addStretch()
+        self._gizle_btn = QPushButton()
+        self._gizle_btn.setObjectName("flat")
+        self._gizle_btn.setFixedHeight(34)
+        self._gizle_btn.clicked.connect(self._gizle_degistir)
+        self._gizle_btn_guncelle()
+        ust.addWidget(self._gizle_btn)
         yenile_btn = QPushButton("↻  Yenile")
         yenile_btn.setObjectName("flat")
         yenile_btn.setFixedHeight(34)
@@ -191,7 +201,18 @@ class DashboardView(QWidget):
         self._worker.veri_geldi.connect(self._guncelle)
         self._worker.start()
 
+    def _gizle_btn_guncelle(self):
+        self._gizle_btn.setText("👁  Tutarları Göster" if self._gizli else "🙈  Tutarları Gizle")
+
+    def _gizle_degistir(self):
+        self._gizli = not self._gizli
+        self._ayarlar.setValue("tutarlar_gizli", self._gizli)
+        self._gizle_btn_guncelle()
+        if self._veri:
+            self._guncelle(self._veri)
+
     def _guncelle(self, data: dict):
+        self._veri = data
         para_anahtarlar = {
             "bugun_ciro", "bugun_kar", "bu_ay_ciro",
             "bu_ay_kar", "toplam_tedarikci_borcu", "toplam_stok_degeri",
@@ -199,7 +220,7 @@ class DashboardView(QWidget):
         for key, kart in self._kartlar.items():
             val = data.get(key, 0) or 0
             if key in para_anahtarlar:
-                kart.set_deger(f"₺ {tr_sayi(val)}")
+                kart.set_deger("₺ ••••••" if self._gizli else f"₺ {tr_sayi(val)}")
             else:
                 kart.set_deger(str(val))
 

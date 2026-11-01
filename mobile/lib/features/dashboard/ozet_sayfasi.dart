@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api.dart';
 import '../../core/format.dart';
+import '../../core/tutar_gizleme.dart';
 import '../../ui/bilesenler.dart';
 import '../../ui/tema.dart';
 import '../../ui/veri.dart';
@@ -33,6 +34,13 @@ class _OzetSayfasiState extends State<OzetSayfasi> with VeriYukleyici<OzetSayfas
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: tutarlarGizli,
+      builder: (context, gizli, _) => _icerik(context, gizli),
+    );
+  }
+
+  Widget _icerik(BuildContext context, bool gizli) {
     return durum((v) {
       final d = v.ozet;
       final r = context.renk;
@@ -46,8 +54,8 @@ class _OzetSayfasiState extends State<OzetSayfasi> with VeriYukleyici<OzetSayfas
 
       final istatistikler = [
         _bolum(context, 'Bugün', [
-          IstatistikKarti(baslik: 'Ciro', deger: para(d['bugun_ciro']), ikon: CupertinoIcons.chart_bar_fill, renk: r.ana),
-          IstatistikKarti(baslik: 'Kâr', deger: para(d['bugun_kar']), ikon: CupertinoIcons.arrow_up_right, renk: r.basari),
+          IstatistikKarti(baslik: 'Ciro', deger: gizlenebilirPara(d['bugun_ciro']), ikon: CupertinoIcons.chart_bar_fill, renk: r.ana),
+          IstatistikKarti(baslik: 'Kâr', deger: gizlenebilirPara(d['bugun_kar']), ikon: CupertinoIcons.arrow_up_right, renk: r.basari),
           IstatistikKarti(
               baslik: 'Satış Adedi',
               deger: '${tamSayi(d['bugun_satis_adedi'])}',
@@ -55,18 +63,18 @@ class _OzetSayfasiState extends State<OzetSayfasi> with VeriYukleyici<OzetSayfas
               renk: r.turuncu),
         ]),
         _bolum(context, 'Bu Ay', [
-          IstatistikKarti(baslik: 'Ciro', deger: para(d['bu_ay_ciro']), ikon: CupertinoIcons.calendar, renk: r.ana),
+          IstatistikKarti(baslik: 'Ciro', deger: gizlenebilirPara(d['bu_ay_ciro']), ikon: CupertinoIcons.calendar, renk: r.ana),
           IstatistikKarti(
-              baslik: 'Kâr', deger: para(d['bu_ay_kar']), ikon: CupertinoIcons.money_dollar_circle_fill, renk: r.basari),
+              baslik: 'Kâr', deger: gizlenebilirPara(d['bu_ay_kar']), ikon: CupertinoIcons.money_dollar_circle_fill, renk: r.basari),
         ]),
         _bolum(context, 'Genel Durum', [
           IstatistikKarti(
               baslik: 'Tedarikçi Borcu',
-              deger: para(d['toplam_tedarikci_borcu']),
+              deger: gizlenebilirPara(d['toplam_tedarikci_borcu']),
               ikon: CupertinoIcons.exclamationmark_circle_fill,
               renk: r.tehlike),
           IstatistikKarti(
-              baslik: 'Stok Değeri', deger: para(d['toplam_stok_degeri']), ikon: CupertinoIcons.cube_box_fill, renk: r.mor),
+              baslik: 'Stok Değeri', deger: gizlenebilirPara(d['toplam_stok_degeri']), ikon: CupertinoIcons.cube_box_fill, renk: r.mor),
           IstatistikKarti(
               baslik: 'Müşteri',
               deger: '${tamSayi(d['toplam_musteri'])}',
@@ -91,7 +99,7 @@ class _OzetSayfasiState extends State<OzetSayfasi> with VeriYukleyici<OzetSayfas
                   Satir(
                     baslik: s['musteri_adi'] as String? ?? '',
                     alt: '${tarihSaat(s['tarih']).split(' ').last}  ·  ${s['odeme_yontemi'] ?? ''}',
-                    sag: Text(para(satisNet(s)), style: context.yazi.titleSmall),
+                    sag: Text(gizlenebilirPara(satisNet(s)), style: context.yazi.titleSmall),
                     onTap: () => satisDetayAc(context, s),
                   ),
               ],
@@ -103,7 +111,13 @@ class _OzetSayfasiState extends State<OzetSayfasi> with VeriYukleyici<OzetSayfas
           yenile: yenile,
           padding: const EdgeInsets.only(bottom: 32),
           children: [
-            BuyukBaslik('Özet', altBaslik: uzunTarih(DateTime.now())),
+            BuyukBaslik('Özet', altBaslik: uzunTarih(DateTime.now()), eylemler: [
+              UstDugme(
+                ikon: gizli ? CupertinoIcons.eye_slash_fill : CupertinoIcons.eye_fill,
+                ipucu: gizli ? 'Tutarları göster' : 'Tutarları gizle',
+                onTap: tutarGizlemeDegistir,
+              ),
+            ]),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

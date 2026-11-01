@@ -10,6 +10,7 @@ Sırayla çalıştırılacak. Her dosya bir kez uygulanır.
 | 004_indexes.sql | Performans index'leri |
 | 005_auth.sql | Kullanıcı/token tabloları + auth SP'leri |
 | 006_raporlar.sql | Rapor ve dashboard SP'leri |
+| 010_saat_dilimi_duzeltme.sql | **Tek seferlik veri düzeltmesi**, normal kurulumda çalıştırılmaz. Sunucu UTC'deyken yazılan eski tarihleri +3 saat kaydırır; kullanım dosyanın başında. |
 | 011_musteri_pasif_silme.sql | Müşteri silme pasif (silindi_mi) hale getirilir; müşteri SP'leri ve dashboard özeti güncellenir |
 | 012_alim_iptal.sql | Alım iptali: sp_alimlar_sil kaydı silmez, iptal_mi = 1 yapar; stok ve tedarikçi borcu geri alınır, stok yetmiyorsa reddedilir |
 | 013_satis_iptal.sql | Satış iptalinde stoğa geri ekleme seçeneği (sp_satislar_sil imzası değişti, API ile birlikte uygulanmalı); kullanılmayan sp_satis_kalemleri_sil kaldırıldı |

@@ -9,6 +9,7 @@
 5. Admin kullanıcı oluştur
 6. Backend servisini başlat
 7. Nginx'i ayarla
+8. **Veritabanı yedeklemesini kur** (atlama!)
 
 ---
 
@@ -219,6 +220,19 @@ ufw --force enable
 cd /opt/management-tire
 bash deploy/scripts/deploy.sh
 ```
+
+---
+
+## 11. Veritabanı Yedeklemesi (ZORUNLU)
+
+3 saatte bir şifreli yedek alınıp GitHub'a gönderilir. VPS silinse bile veri kaybolmaz.
+
+```bash
+sudo bash deploy/yedek/yedek_kurulum.sh
+```
+
+Önce yapılacaklar (age anahtarı, GitHub repo, healthchecks.io) ve geri yükleme:
+**[docs/veritabani-yedekleme.md](docs/veritabani-yedekleme.md)**
 
 ---
 
