@@ -54,6 +54,15 @@ class UrunApi {
   static Future<Json> eprelKaydet(Json v) async => (await _c.post('/api/urunler/eprel-kaydet', data: v) as Map).cast();
 }
 
+class LastikVeriApi {
+  static Future<List<Json>> markalar() => _liste('/api/lastik-verileri/markalar');
+  static Future<void> markaEkle(String ad) => _c.post('/api/lastik-verileri/markalar', data: {'ad': ad});
+  static Future<List<Json>> modeller() => _liste('/api/lastik-verileri/modeller');
+  static Future<void> modelEkle(String ad) => _c.post('/api/lastik-verileri/modeller', data: {'ad': ad});
+  static Future<List<Json>> ebatlar({String? kategori}) => _liste('/api/lastik-verileri/ebatlar', {if (kategori != null) 'kategori': kategori});
+  static Future<void> ebatEkle(String ebat, String kategori) => _c.post('/api/lastik-verileri/ebatlar', data: {'ebat': ebat, 'kategori': kategori});
+}
+
 class MusteriApi {
   static Future<List<Json>> liste({String? arama, int limit = 200}) => _liste('/api/musteriler', {
         if (arama != null && arama.isNotEmpty) 'arama': arama,

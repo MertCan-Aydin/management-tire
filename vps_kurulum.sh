@@ -167,6 +167,10 @@ MIGRATIONS=(
     "008_eprel.sql"
     "009_lastik_oteli.sql"
     "010_maliyet_bilinmiyor.sql"
+    "011_musteri_pasif_silme.sql"
+    "012_alim_iptal.sql"
+    "013_satis_iptal.sql"
+    "014_lastik_verileri.sql"
 )
 
 for mf in "${MIGRATIONS[@]}"; do

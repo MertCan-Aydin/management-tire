@@ -19,6 +19,7 @@ from .presentation import (
     gider_router,
     rapor_router,
     lastik_oteli_router,
+    lastik_veri_router,
 )
 
 # ── Loglama ──────────────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ app.include_router(satis_router.router,     prefix="/api/satislar",     tags=["S
 app.include_router(gider_router.router,     prefix="/api/giderler",     tags=["Giderler"])
 app.include_router(rapor_router.router,       prefix="/api/raporlar",      tags=["Raporlar"])
 app.include_router(lastik_oteli_router.router, prefix="/api/lastik-oteli", tags=["Lastik Oteli"])
+app.include_router(lastik_veri_router.router,  prefix="/api/lastik-verileri", tags=["Lastik Verileri"])
 
 
 # ── Sağlık Kontrolü ──────────────────────────────────────────────────────────

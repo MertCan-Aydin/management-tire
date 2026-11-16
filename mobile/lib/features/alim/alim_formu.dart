@@ -608,7 +608,7 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
     final v = await _listeSec('Marka Seç', LastikVerileri.markalar, _markaAdi);
     if (v != null && mounted) {
       setState(() { _markaAdi = v; _secildi = false; _secilenUrunId = null; });
-      if (!varsayilanMarkalar.contains(v)) LastikVerileri.markaEkle(v);
+      LastikVerileri.markaEkle(v);
     }
   }
 
@@ -616,7 +616,7 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
     final v = await _listeSec('Model Seç', LastikVerileri.modeller, _modelAdi);
     if (v != null && mounted) {
       setState(() { _modelAdi = v; _secildi = false; _secilenUrunId = null; });
-      if (!varsayilanModeller.contains(v)) LastikVerileri.modelEkle(v);
+      LastikVerileri.modelEkle(v);
     }
   }
 
@@ -624,9 +624,7 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
     final v = await _listeSec('Ebat Seç', () => LastikVerileri.ebatlar(_ebatKategori), _ebatAdi);
     if (v != null && mounted) {
       setState(() { _ebatAdi = v; _secildi = false; _secilenUrunId = null; });
-      if (!otomobilEbatlari.contains(v) && !kamyonEbatlari.contains(v) && !tirEbatlari.contains(v)) {
-        LastikVerileri.ebatEkle(v);
-      }
+      LastikVerileri.ebatEkle(v, _ebatKategori);
     }
   }
 
