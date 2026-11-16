@@ -531,6 +531,7 @@ class _UrunAlimFormuState extends State<_UrunAlimFormu> {
 }
 
 /// Etiket bilgilerini elle girerek yeni ürün oluşturur (QR bozuk olduğunda).
+/// Üstte arama kutusu ile mevcut ürünler aranabilir; seçilince form otomatik dolar.
 class _ManuelEtiketFormu extends StatefulWidget {
   final String? eprelNo;
   const _ManuelEtiketFormu({this.eprelNo});
@@ -540,6 +541,7 @@ class _ManuelEtiketFormu extends StatefulWidget {
 }
 
 class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
+  final _arama = TextEditingController();
   final _marka = TextEditingController();
   final _model = TextEditingController();
   final _ebat = TextEditingController();
@@ -551,13 +553,44 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
   bool _guncelBorctan = false;
   bool _kaydediliyor = false;
   String? _hata;
+  List<Json> _sonuclar = [];
+  bool _araniyor = false;
+  bool _secildi = false;
+  int? _secilenUrunId;
 
   @override
   void dispose() {
-    for (final c in [_marka, _model, _ebat, _alis, _satis]) {
+    for (final c in [_arama, _marka, _model, _ebat, _alis, _satis]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _ara() async {
+    final q = _arama.text.trim();
+    if (q.isEmpty) return;
+    setState(() => _araniyor = true);
+    try {
+      final liste = await UrunApi.liste(arama: q, limit: 20);
+      if (!mounted) return;
+      setState(() { _sonuclar = liste; _araniyor = false; });
+    } catch (_) {
+      if (mounted) setState(() => _araniyor = false);
+    }
+  }
+
+  void _urunSec(Json u) {
+    setState(() {
+      _marka.text = (u['marka_adi'] as String?) ?? '';
+      _model.text = (u['model_adi'] as String?) ?? '';
+      _ebat.text = (u['ebat'] as String?) ?? '';
+      _mevsim = (u['mevsim'] as String?) ?? 'Yaz';
+      final sf = sayi(u['satis_fiyati']);
+      if (sf > 0) _satis.text = paraSade(u['satis_fiyati']);
+      _secildi = true;
+      _secilenUrunId = tamSayi(u['id']);
+      _sonuclar = [];
+    });
   }
 
   Future<void> _kaydet() async {
@@ -572,30 +605,51 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
     }
     setState(() { _kaydediliyor = true; _hata = null; });
     try {
-      final eprelNo = widget.eprelNo ?? _marka.text.trim().hashCode.abs().toString();
-      final d = await UrunApi.eprelKaydet({
-        'eprel_no': eprelNo,
-        'marka': _marka.text.trim(),
-        'model': _model.text.trim().isEmpty ? _ebat.text.trim() : _model.text.trim(),
-        'ebat': _ebat.text.trim(),
-        'mevsim': _mevsim,
-        'satis_fiyati': sayiOku(_satis.text) ?? 0,
-        'maliyet_fiyati': alis,
-        'maliyet_bilinmiyor': _maliyetBilinmiyor,
-        'guncel_borctan': _guncelBorctan,
-      });
-      if (!mounted) return;
-      if (dogruMu(d['yeni_mi'])) bildir(context, 'Yeni ürün oluşturuldu: ${d['urun_ad']}');
-      Navigator.pop(
-        context,
-        _Kalem(
-          urunId: tamSayi(d['urun_id']),
-          ad: d['urun_ad'] as String? ?? '',
-          alt: '${_ebat.text.trim()}  ·  $_mevsim',
-          miktar: _miktar,
-          birimFiyat: alis,
-        ),
-      );
+      if (_secildi && _secilenUrunId != null) {
+        final satisYeni = sayiOku(_satis.text) ?? 0;
+        final mevcutSatis = sayi((await UrunApi.getir(_secilenUrunId!))['satis_fiyati']);
+        if (satisYeni > 0 && satisYeni != mevcutSatis) {
+          await UrunApi.guncelle(_secilenUrunId!, (await UrunApi.getir(_secilenUrunId!))..['satis_fiyati'] = satisYeni);
+        }
+        if (!mounted) return;
+        Navigator.pop(
+          context,
+          _Kalem(
+            urunId: _secilenUrunId!,
+            ad: '${_marka.text.trim()} ${_model.text.trim()} ${_ebat.text.trim()}',
+            alt: '${_ebat.text.trim()}  ·  $_mevsim',
+            miktar: _miktar,
+            birimFiyat: alis,
+            maliyetBilinmiyor: _maliyetBilinmiyor,
+            guncelBorctan: _guncelBorctan,
+          ),
+        );
+      } else {
+        final eprelNo = widget.eprelNo ?? _marka.text.trim().hashCode.abs().toString();
+        final d = await UrunApi.eprelKaydet({
+          'eprel_no': eprelNo,
+          'marka': _marka.text.trim(),
+          'model': _model.text.trim().isEmpty ? _ebat.text.trim() : _model.text.trim(),
+          'ebat': _ebat.text.trim(),
+          'mevsim': _mevsim,
+          'satis_fiyati': sayiOku(_satis.text) ?? 0,
+          'maliyet_fiyati': alis,
+          'maliyet_bilinmiyor': _maliyetBilinmiyor,
+          'guncel_borctan': _guncelBorctan,
+        });
+        if (!mounted) return;
+        if (dogruMu(d['yeni_mi'])) bildir(context, 'Yeni ürün oluşturuldu: ${d['urun_ad']}');
+        Navigator.pop(
+          context,
+          _Kalem(
+            urunId: tamSayi(d['urun_id']),
+            ad: d['urun_ad'] as String? ?? '',
+            alt: '${_ebat.text.trim()}  ·  $_mevsim',
+            miktar: _miktar,
+            birimFiyat: alis,
+          ),
+        );
+      }
     } catch (e) {
       setState(() { _hata = hataMesaji(e); _kaydediliyor = false; });
     }
@@ -611,10 +665,60 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
       hata: _hata,
       children: [
         Grup(
-          baslik: 'Etiket Bilgisi',
-          altNot: 'Etiketin üzerindeki bilgileri girin. Ürün yoksa otomatik oluşturulur.',
+          baslik: 'Ürün Ara',
+          altNot: 'Marka, model veya ebat yazıp arayın. Mevcut ürün bulunursa bilgiler otomatik dolar.',
           children: [
-            MetinSatiri(etiket: 'Marka', kontrolcu: _marka, otomatikOdak: true),
+            Row(children: [
+              Expanded(child: CupertinoTextField(
+                controller: _arama,
+                placeholder: 'Örn: Continental 205/55',
+                onSubmitted: (_) => _ara(),
+                textInputAction: TextInputAction.search,
+              )),
+              const SizedBox(width: 8),
+              CupertinoButton(padding: EdgeInsets.zero, onPressed: _araniyor ? null : _ara,
+                child: _araniyor ? const CupertinoActivityIndicator() : const Icon(CupertinoIcons.search)),
+            ]),
+            if (_sonuclar.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: CupertinoScrollbar(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _sonuclar.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (_, i) {
+                      final u = _sonuclar[i];
+                      return CupertinoButton(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                        onPressed: () => _urunSec(u),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text('${u['marka_adi']} ${u['model_adi']}', style: context.yazi.bodyMedium),
+                            Text('${u['ebat'] ?? ''}  ·  ${u['mevsim'] ?? ''}', style: context.yazi.bodySmall?.copyWith(color: CupertinoColors.systemGrey)),
+                          ]),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+            if (_sonuclar.isEmpty && _arama.text.trim().isNotEmpty && !_araniyor)
+              const Padding(padding: EdgeInsets.only(top: 8), child: Text('Sonuç bulunamadı — bilgileri elle girin', style: TextStyle(color: CupertinoColors.systemGrey, fontSize: 13))),
+          ],
+        ),
+        if (_secildi)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text('${_marka.text} ${_model.text} seçildi', style: TextStyle(color: CupertinoColors.activeBlue, fontSize: 13)),
+          ),
+        Grup(
+          baslik: 'Etiket Bilgisi',
+          children: [
+            MetinSatiri(etiket: 'Marka', kontrolcu: _marka),
             MetinSatiri(etiket: 'Model (opsiyonel)', kontrolcu: _model),
             MetinSatiri(etiket: 'Ebat', kontrolcu: _ebat, ipucu: '205/55R16 94V'),
             SegmentSatiri<String>(
