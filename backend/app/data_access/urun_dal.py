@@ -150,3 +150,20 @@ def urun_eprel_bul_silinmis(cursor, eprel_no: str) -> dict | None:
 
 def urun_geri_aktiflestir(cursor, urun_id: int) -> None:
     cursor.execute("UPDATE urunler SET silindi_mi = 0 WHERE id = %s", [urun_id])
+
+
+def urun_ad_ile_bul(cursor, marka: str, model: str, ebat: str) -> dict | None:
+    cursor.execute(
+        """SELECT u.id, u.ad, u.satis_fiyati, u.maliyet_fiyati, u.barkod_qr, u.silindi_mi
+           FROM urunler u
+           JOIN urun_markalari m ON m.id = u.marka_id
+           JOIN urun_marka_modelleri mm ON mm.id = u.marka_modeli_id
+           WHERE m.ad = %s AND mm.ad = %s AND u.ebat = %s
+           LIMIT 1""",
+        [marka, model, ebat],
+    )
+    return cursor.fetchone()
+
+
+def urun_barkod_guncelle(cursor, urun_id: int, yeni_barkod: str) -> None:
+    cursor.execute("UPDATE urunler SET barkod_qr = %s WHERE id = %s", [yeni_barkod, urun_id])

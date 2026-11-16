@@ -104,11 +104,21 @@ def eprel_kaydet(cursor, req) -> dict:
     EPREL QR'dan gelen ürünü veritabanında bul veya oluştur.
     Tip → Marka → Model → Ürün hiyerarşisini otomatik oluşturur.
     """
+    # 1. EPREL numarasıyla ara
     mevcut = urun_dal.urun_eprel_bul(cursor, req.eprel_no)
     if not mevcut:
         mevcut = urun_dal.urun_eprel_bul_silinmis(cursor, req.eprel_no)
         if mevcut:
             urun_dal.urun_geri_aktiflestir(cursor, mevcut["id"])
+
+    # 2. Bulunamadıysa marka + model + ebat ile ara
+    if not mevcut:
+        mevcut = urun_dal.urun_ad_ile_bul(cursor, req.marka, req.model, req.ebat)
+        if mevcut and mevcut.get("silindi_mi"):
+            urun_dal.urun_geri_aktiflestir(cursor, mevcut["id"])
+        if mevcut:
+            urun_dal.urun_barkod_guncelle(cursor, mevcut["id"], req.eprel_no)
+
     if mevcut:
         return {
             "urun_id": mevcut["id"],
