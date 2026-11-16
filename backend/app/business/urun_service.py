@@ -127,6 +127,8 @@ def eprel_kaydet(cursor, req) -> dict:
         "aciklama": None,
         "satis_fiyati": satis_f,
         "maliyet_fiyati": req.maliyet_fiyati,
+        "maliyet_bilinmiyor": req.maliyet_bilinmiyor,
+        "guncel_borctan": req.guncel_borctan,
         "stok": 0,
         "fiziksel_urun_mu": True,
         "resim_yolu": None,

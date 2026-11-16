@@ -81,6 +81,8 @@ class EprelKaydetRequest(BaseModel):
     mevsim: str
     satis_fiyati: float = 0.0
     maliyet_fiyati: float = 0.0
+    maliyet_bilinmiyor: bool = False
+    guncel_borctan: bool = False
 
     @field_validator("mevsim")
     @classmethod

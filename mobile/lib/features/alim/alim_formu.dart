@@ -119,7 +119,7 @@ class _AlimFormuState extends State<_AlimFormu> {
     } else if (_kalemler.isEmpty) {
       hata = 'En az bir ürün ekleyin';
     } else if (_kalemler.any((k) => k.birimFiyat <= 0)) {
-      hata = 'Alış fiyatı girilmemiş ürünler var';
+      hata = 'Alış fiyatı girilmemiş ürünler var (fiyata dokunarak girin)';
     }
     if (hata != null) {
       setState(() => _hata = hata);
@@ -303,6 +303,8 @@ class _EprelFormuState extends State<_EprelFormu> {
   final _alis = TextEditingController();
   final _satis = TextEditingController();
   int _miktar = 4;
+  bool _maliyetBilinmiyor = false;
+  bool _guncelBorctan = false;
   bool _kaydediliyor = false;
   String? _hata;
 
@@ -320,8 +322,8 @@ class _EprelFormuState extends State<_EprelFormu> {
       setState(() => _hata = 'Marka, model ve ebat zorunludur');
       return;
     }
-    if (alis <= 0) {
-      setState(() => _hata = 'Alış fiyatı girin');
+    if (alis <= 0 && !_maliyetBilinmiyor && !_guncelBorctan) {
+      setState(() => _hata = 'Alış fiyatı girin veya bir seçenek işaretleyin');
       return;
     }
     setState(() {
@@ -337,6 +339,8 @@ class _EprelFormuState extends State<_EprelFormu> {
         'mevsim': _mevsim,
         'satis_fiyati': sayiOku(_satis.text) ?? 0,
         'maliyet_fiyati': alis,
+        'maliyet_bilinmiyor': _maliyetBilinmiyor,
+        'guncel_borctan': _guncelBorctan,
       });
       if (!mounted) return;
       if (dogruMu(d['yeni_mi'])) bildir(context, 'Yeni ürün oluşturuldu: ${d['urun_ad']}');
@@ -383,7 +387,14 @@ class _EprelFormuState extends State<_EprelFormu> {
           ],
         ),
         Grup(baslik: 'Alım', children: [
-          MetinSatiri.para(etiket: 'Alış Fiyatı', kontrolcu: _alis, otomatikOdak: true),
+          Opacity(opacity: _maliyetBilinmiyor ? 0.4 : 1, child: AbsorbPointer(absorbing: _maliyetBilinmiyor, child: MetinSatiri.para(etiket: 'Alış Fiyatı', kontrolcu: _alis, otomatikOdak: true))),
+          AnahtarSatiri(etiket: 'Alış fiyatı bilinmiyor', deger: _maliyetBilinmiyor, degisti: (v) {
+            setState(() {
+              _maliyetBilinmiyor = v;
+              if (v) _alis.clear();
+            });
+          }),
+          AnahtarSatiri(etiket: 'Güncel borçtan', deger: _guncelBorctan, degisti: (v) => setState(() => _guncelBorctan = v)),
           MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satis),
           AdimSatiri(etiket: 'Miktar', deger: _miktar, degisti: (v) => setState(() => _miktar = v)),
         ]),
