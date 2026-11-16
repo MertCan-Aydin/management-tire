@@ -105,8 +105,16 @@ class _AlimFormuState extends State<_AlimFormu> {
       if (!mounted) return;
       await _eprelEkle(eprel.toMap());
     } catch (e) {
-      if (mounted) bildir(context, 'EPREL kaydı bulunamadı', hata: true);
+      if (!mounted) return;
+      bildir(context, 'EPREL bulunamadı, bilgileri elle girin');
+      await _manuelEtiketGirisi(eprelNo: no.trim());
     }
+  }
+
+  Future<void> _manuelEtiketGirisi({String? eprelNo}) async {
+    final kalem = await formAc<_Kalem>(context, (_) => _ManuelEtiketFormu(eprelNo: eprelNo));
+    if (kalem == null || !mounted) return;
+    setState(() => _kalemler.add(kalem));
   }
 
   Future<void> _urunListedenSec() async {
@@ -287,6 +295,7 @@ class _AlimFormuState extends State<_AlimFormu> {
             EylemSatiri('Listeden Ürün Ekle', ikon: CupertinoIcons.add_circled, onTap: _urunListedenSec),
             EylemSatiri('QR / EPREL Etiketi Okut', ikon: CupertinoIcons.qrcode_viewfinder, onTap: _qrOkut),
             EylemSatiri('EPREL No ile Ara', ikon: CupertinoIcons.number, onTap: _eprelNoIleAra),
+            EylemSatiri('Etiket Bilgilerini Elle Gir', ikon: CupertinoIcons.pencil, onTap: _manuelEtiketGirisi),
           ],
         ],
       ),
@@ -506,6 +515,118 @@ class _UrunAlimFormuState extends State<_UrunAlimFormu> {
         ]),
         Grup(baslik: 'Alım', children: [
           Opacity(opacity: _maliyetBilinmiyor ? 0.4 : 1, child: AbsorbPointer(absorbing: _maliyetBilinmiyor, child: MetinSatiri.para(etiket: 'Alış Fiyatı', kontrolcu: _alis, otomatikOdak: true))),
+          AnahtarSatiri(etiket: 'Alış fiyatı bilinmiyor', deger: _maliyetBilinmiyor, degisti: (v) {
+            setState(() {
+              _maliyetBilinmiyor = v;
+              if (v) _alis.clear();
+            });
+          }),
+          AnahtarSatiri(etiket: 'Güncel borçtan', deger: _guncelBorctan, degisti: (v) => setState(() => _guncelBorctan = v)),
+          MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satis),
+          AdimSatiri(etiket: 'Miktar', deger: _miktar, degisti: (v) => setState(() => _miktar = v)),
+        ]),
+      ],
+    );
+  }
+}
+
+/// Etiket bilgilerini elle girerek yeni ürün oluşturur (QR bozuk olduğunda).
+class _ManuelEtiketFormu extends StatefulWidget {
+  final String? eprelNo;
+  const _ManuelEtiketFormu({this.eprelNo});
+
+  @override
+  State<_ManuelEtiketFormu> createState() => _ManuelEtiketFormuState();
+}
+
+class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
+  final _marka = TextEditingController();
+  final _model = TextEditingController();
+  final _ebat = TextEditingController();
+  String _mevsim = 'Yaz';
+  final _alis = TextEditingController();
+  final _satis = TextEditingController();
+  int _miktar = 4;
+  bool _maliyetBilinmiyor = false;
+  bool _guncelBorctan = false;
+  bool _kaydediliyor = false;
+  String? _hata;
+
+  @override
+  void dispose() {
+    for (final c in [_marka, _model, _ebat, _alis, _satis]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _kaydet() async {
+    final alis = sayiOku(_alis.text) ?? 0;
+    if (_marka.text.trim().isEmpty || _ebat.text.trim().isEmpty) {
+      setState(() => _hata = 'Marka ve ebat zorunludur');
+      return;
+    }
+    if (alis <= 0 && !_maliyetBilinmiyor && !_guncelBorctan) {
+      setState(() => _hata = 'Alış fiyatı girin veya bir seçenek işaretleyin');
+      return;
+    }
+    setState(() { _kaydediliyor = true; _hata = null; });
+    try {
+      final eprelNo = widget.eprelNo ?? _marka.text.trim().hashCode.abs().toString();
+      final d = await UrunApi.eprelKaydet({
+        'eprel_no': eprelNo,
+        'marka': _marka.text.trim(),
+        'model': _model.text.trim().isEmpty ? _ebat.text.trim() : _model.text.trim(),
+        'ebat': _ebat.text.trim(),
+        'mevsim': _mevsim,
+        'satis_fiyati': sayiOku(_satis.text) ?? 0,
+        'maliyet_fiyati': alis,
+        'maliyet_bilinmiyor': _maliyetBilinmiyor,
+        'guncel_borctan': _guncelBorctan,
+      });
+      if (!mounted) return;
+      if (dogruMu(d['yeni_mi'])) bildir(context, 'Yeni ürün oluşturuldu: ${d['urun_ad']}');
+      Navigator.pop(
+        context,
+        _Kalem(
+          urunId: tamSayi(d['urun_id']),
+          ad: d['urun_ad'] as String? ?? '',
+          alt: '${_ebat.text.trim()}  ·  $_mevsim',
+          miktar: _miktar,
+          birimFiyat: alis,
+        ),
+      );
+    } catch (e) {
+      setState(() { _hata = hataMesaji(e); _kaydediliyor = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FormIskeleti(
+      baslik: 'Etiket Bilgilerini Gir',
+      kaydetMetni: 'Ekle',
+      kaydet: _kaydet,
+      kaydediliyor: _kaydediliyor,
+      hata: _hata,
+      children: [
+        Grup(
+          baslik: 'Etiket Bilgisi',
+          altNot: 'Etiketin üzerindeki bilgileri girin. Ürün yoksa otomatik oluşturulur.',
+          children: [
+            MetinSatiri(etiket: 'Marka', kontrolcu: _marka, otomatikOdak: true),
+            MetinSatiri(etiket: 'Model (opsiyonel)', kontrolcu: _model),
+            MetinSatiri(etiket: 'Ebat', kontrolcu: _ebat, ipucu: '205/55R16 94V'),
+            SegmentSatiri<String>(
+              etiket: 'Mevsim',
+              secenekler: const {'Yaz': 'Yaz', 'Kış': 'Kış', 'Dört Mevsim': '4 Mevsim'},
+              secili: _mevsim,
+              degisti: (v) => setState(() => _mevsim = v),
+            ),
+          ],
+        ),
+        Grup(baslik: 'Alım', children: [
+          Opacity(opacity: _maliyetBilinmiyor ? 0.4 : 1, child: AbsorbPointer(absorbing: _maliyetBilinmiyor, child: MetinSatiri.para(etiket: 'Alış Fiyatı', kontrolcu: _alis))),
           AnahtarSatiri(etiket: 'Alış fiyatı bilinmiyor', deger: _maliyetBilinmiyor, degisti: (v) {
             setState(() {
               _maliyetBilinmiyor = v;
