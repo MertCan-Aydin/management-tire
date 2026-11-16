@@ -138,3 +138,15 @@ def urun_modeli_bul_veya_olustur(cursor, marka_id: int, ad: str, mevsim: str) ->
 
 def urun_eprel_bul(cursor, eprel_no: str) -> dict | None:
     return call_sp_one(cursor, "sp_urun_eprel_bul", [eprel_no])
+
+
+def urun_eprel_bul_silinmis(cursor, eprel_no: str) -> dict | None:
+    cursor.execute(
+        "SELECT id, ad, satis_fiyati, maliyet_fiyati, barkod_qr FROM urunler WHERE barkod_qr = %s AND silindi_mi = 1 LIMIT 1",
+        [eprel_no],
+    )
+    return cursor.fetchone()
+
+
+def urun_geri_aktiflestir(cursor, urun_id: int) -> None:
+    cursor.execute("UPDATE urunler SET silindi_mi = 0 WHERE id = %s", [urun_id])

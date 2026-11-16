@@ -105,6 +105,10 @@ def eprel_kaydet(cursor, req) -> dict:
     Tip → Marka → Model → Ürün hiyerarşisini otomatik oluşturur.
     """
     mevcut = urun_dal.urun_eprel_bul(cursor, req.eprel_no)
+    if not mevcut:
+        mevcut = urun_dal.urun_eprel_bul_silinmis(cursor, req.eprel_no)
+        if mevcut:
+            urun_dal.urun_geri_aktiflestir(cursor, mevcut["id"])
     if mevcut:
         return {
             "urun_id": mevcut["id"],
