@@ -118,8 +118,6 @@ class _AlimFormuState extends State<_AlimFormu> {
       hata = 'Tedarikçi seçin';
     } else if (_kalemler.isEmpty) {
       hata = 'En az bir ürün ekleyin';
-    } else if (_kalemler.any((k) => k.birimFiyat <= 0)) {
-      hata = 'Alış fiyatı girilmemiş ürünler var (fiyata dokunarak girin)';
     }
     if (hata != null) {
       setState(() => _hata = hata);
