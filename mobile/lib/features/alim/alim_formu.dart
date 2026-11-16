@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/api.dart';
 import '../../core/api_client.dart';
+import '../../core/eprel_client.dart';
 import '../../core/format.dart';
 import '../../ui/bilesenler.dart';
 import '../../ui/form.dart';
@@ -78,6 +79,34 @@ class _AlimFormuState extends State<_AlimFormu> {
     final kalem = await formAc<_Kalem>(context, (_) => _EprelFormu(eprel: eprel));
     if (kalem == null || !mounted) return;
     setState(() => _kalemler.add(kalem));
+  }
+
+  Future<void> _eprelNoIleAra() async {
+    final ctrl = TextEditingController();
+    final no = await showCupertinoDialog<String>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('EPREL No Gir'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(controller: ctrl, placeholder: 'Örn: 1020064', keyboardType: TextInputType.number, autofocus: true),
+        ),
+        actions: [
+          CupertinoDialogAction(isDestructiveAction: true, onPressed: () => Navigator.pop(ctx), child: const Text('İptal')),
+          CupertinoDialogAction(isDefaultAction: true, onPressed: () => Navigator.pop(ctx, ctrl.text), child: const Text('Ara')),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (no == null || no.trim().isEmpty || !mounted) return;
+    try {
+      bildir(context, 'EPREL sorgulanıyor…');
+      final eprel = await EprelClient.fetchByNo(no.trim());
+      if (!mounted) return;
+      await _eprelEkle(eprel.toMap());
+    } catch (e) {
+      if (mounted) bildir(context, 'EPREL kaydı bulunamadı', hata: true);
+    }
   }
 
   Future<void> _urunListedenSec() async {
@@ -257,6 +286,7 @@ class _AlimFormuState extends State<_AlimFormu> {
           if (dar) ...[
             EylemSatiri('Listeden Ürün Ekle', ikon: CupertinoIcons.add_circled, onTap: _urunListedenSec),
             EylemSatiri('QR / EPREL Etiketi Okut', ikon: CupertinoIcons.qrcode_viewfinder, onTap: _qrOkut),
+            EylemSatiri('EPREL No ile Ara', ikon: CupertinoIcons.number, onTap: _eprelNoIleAra),
           ],
         ],
       ),
