@@ -9,6 +9,8 @@ class UrunEkleRequest(BaseModel):
     aciklama: Optional[str] = None
     satis_fiyati: float
     maliyet_fiyati: Optional[float] = None
+    maliyet_bilinmiyor: bool = False
+    guncel_borctan: bool = False
     stok: int = 0
     fiziksel_urun_mu: bool = True
     resim_yolu: Optional[str] = None
@@ -19,8 +21,8 @@ class UrunEkleRequest(BaseModel):
     @field_validator("satis_fiyati")
     @classmethod
     def fiyat_pozitif(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError("Satış fiyatı 0'dan büyük olmalıdır")
+        if v < 0:
+            raise ValueError("Satış fiyatı negatif olamaz")
         return v
 
     @field_validator("stok")

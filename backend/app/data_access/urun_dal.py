@@ -92,7 +92,10 @@ def urun_barkod_ara(cursor, barkod: str) -> dict | None:
 def urun_ekle(cursor, data: dict) -> int:
     row = call_sp_one(cursor, "sp_urunler_ekle", [
         data["barkod_qr"], data["ad"], data["ebat"], data["aciklama"],
-        data["satis_fiyati"], data["maliyet_fiyati"], data["stok"],
+        data["satis_fiyati"], data["maliyet_fiyati"],
+        int(data.get("maliyet_bilinmiyor", False)),
+        int(data.get("guncel_borctan", False)),
+        data["stok"],
         int(data["fiziksel_urun_mu"]), data["resim_yolu"],
         data["urun_tipi_id"], data["marka_id"], data["marka_modeli_id"],
     ])
@@ -103,7 +106,10 @@ def urun_guncelle(cursor, urun_id: int, data: dict) -> None:
     call_sp(cursor, "sp_urunler_guncelle", [
         urun_id,
         data["barkod_qr"], data["ad"], data["ebat"], data["aciklama"],
-        data["satis_fiyati"], data["maliyet_fiyati"], data["stok"],
+        data["satis_fiyati"], data["maliyet_fiyati"],
+        int(data.get("maliyet_bilinmiyor", False)),
+        int(data.get("guncel_borctan", False)),
+        data["stok"],
         int(data["fiziksel_urun_mu"]), data["resim_yolu"], int(data["silindi_mi"]),
         data["urun_tipi_id"], data["marka_id"], data["marka_modeli_id"],
     ])

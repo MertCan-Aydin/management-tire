@@ -7,9 +7,14 @@ class UrunView(BaseListView):
     BASLIK = "Ürünler"
     API_PATH = "/api/urunler"
     SIL_IPUCU = "Silmek için Delete"
-    SUTUNLAR = ["Barkod/QR", "Ürün Adı", "Ebat", "Tip", "Marka", "Model", "Mevsim", "Satış ₺", "Maliyet ₺", "Stok"]
+    SUTUNLAR = ["Barkod/QR", "Ürün Adı", "Ebat", "Tip", "Marka", "Model", "Mevsim", "Satış ₺", "Maliyet ₺", "Stok", "Not"]
 
     def _satira_donustur(self, row: dict) -> list:
+        notlar = []
+        if row.get("maliyet_bilinmiyor"):
+            notlar.append("Fiyat bilinmiyor")
+        if row.get("guncel_borctan"):
+            notlar.append("Borçtan")
         return [
             row.get("barkod_qr", "") or "",
             row.get("ad", ""),
@@ -21,6 +26,7 @@ class UrunView(BaseListView):
             tr_para(row.get('satis_fiyati', 0)),
             tr_para(row.get('maliyet_fiyati', 0) or 0),
             str(row.get("stok", 0)),
+            ", ".join(notlar),
         ]
 
     def _ekle_dialogu(self):

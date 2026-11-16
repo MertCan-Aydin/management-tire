@@ -215,7 +215,8 @@ class _UrunDetayState extends State<UrunDetay> with VeriYukleyici<UrunDetay, Jso
           ]),
           Grup(baslik: 'Fiyat ve Stok', children: [
             BilgiSatiri('Satış Fiyatı', para(satis), degerRengi: r.metin, kalin: true),
-            BilgiSatiri('Maliyet', maliyet > 0 ? para(maliyet) : null),
+            BilgiSatiri('Maliyet', maliyet > 0 ? para(maliyet) : dogruMu(u['maliyet_bilinmiyor'] ?? false) ? 'Bilinmiyor' : null),
+            if (dogruMu(u['guncel_borctan'] ?? false)) BilgiSatiri('Kaynak', 'Güncel borçtan'),
             BilgiSatiri('Birim Kâr', maliyet > 0 ? para(satis - maliyet) : null, degerRengi: r.basari),
             BilgiSatiri('Kâr Marjı', marj == null ? null : '%${marj.toStringAsFixed(1).replaceAll('.', ',')}'),
             BilgiSatiri('Stok', '$stok adet'),
@@ -255,6 +256,8 @@ class _UrunFormuState extends State<_UrunFormu> {
   late final _aciklama = TextEditingController(text: m['aciklama'] as String? ?? '');
   late int _stok = tamSayi(m['stok']);
   late bool _fiziksel = dogruMu(m['fiziksel_urun_mu'] ?? true);
+  late bool _maliyetBilinmiyor = dogruMu(m['maliyet_bilinmiyor'] ?? false);
+  late bool _guncelBorctan = dogruMu(m['guncel_borctan'] ?? false);
 
   // (id, ad) çiftleri
   late (int, String)? _tip = _cift(m['urun_tipi_id'], m['tip_adi']);
@@ -301,8 +304,8 @@ class _UrunFormuState extends State<_UrunFormu> {
       hata = 'Ürün adı zorunludur';
     } else if (_tip == null || _marka == null || _model == null) {
       hata = 'Tip, marka ve model seçin';
-    } else if (satis == null || satis <= 0) {
-      hata = 'Satış fiyatı 0\'dan büyük olmalıdır';
+    } else if (satis == null || satis < 0) {
+      hata = 'Satış fiyatı negatif olamaz';
     }
     if (hata != null) {
       setState(() => _hata = hata);
@@ -320,6 +323,8 @@ class _UrunFormuState extends State<_UrunFormu> {
       'aciklama': bosNull(_aciklama),
       'satis_fiyati': satis,
       'maliyet_fiyati': sayiOku(_maliyet.text),
+      'maliyet_bilinmiyor': _maliyetBilinmiyor,
+      'guncel_borctan': _guncelBorctan,
       'stok': _stok,
       'fiziksel_urun_mu': _fiziksel,
       'resim_yolu': m['resim_yolu'],
@@ -408,7 +413,14 @@ class _UrunFormuState extends State<_UrunFormu> {
         ]),
         Grup(baslik: 'Fiyat ve Stok', children: [
           MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satis),
-          MetinSatiri.para(etiket: 'Maliyet', kontrolcu: _maliyet),
+          Opacity(opacity: _maliyetBilinmiyor ? 0.4 : 1, child: AbsorbPointer(absorbing: _maliyetBilinmiyor, child: MetinSatiri.para(etiket: 'Maliyet', kontrolcu: _maliyet))),
+          AnahtarSatiri(etiket: 'Alış fiyatı bilinmiyor', deger: _maliyetBilinmiyor, degisti: (v) {
+            setState(() {
+              _maliyetBilinmiyor = v;
+              if (v) _maliyet.clear();
+            });
+          }),
+          AnahtarSatiri(etiket: 'Güncel borçtan', deger: _guncelBorctan, degisti: (v) => setState(() => _guncelBorctan = v)),
           AdimSatiri(etiket: 'Stok', deger: _stok, min: 0, degisti: (v) => setState(() => _stok = v)),
           AnahtarSatiri(etiket: 'Fiziksel ürün (stok düşer)', deger: _fiziksel, degisti: (v) => setState(() => _fiziksel = v)),
         ]),

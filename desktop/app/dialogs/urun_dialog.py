@@ -64,7 +64,7 @@ class UrunDialog(BaseFormDialog):
 
         # Fiyatlar
         self._satis_fiyati = QDoubleSpinBox()
-        self._satis_fiyati.setRange(0.01, 999_999)
+        self._satis_fiyati.setRange(0, 999_999)
         self._satis_fiyati.setDecimals(2)
         self._satis_fiyati.setSuffix(" ₺")
         self.form_layout.addRow("Satış Fiyatı *", self._satis_fiyati)
@@ -74,6 +74,13 @@ class UrunDialog(BaseFormDialog):
         self._maliyet_fiyati.setDecimals(2)
         self._maliyet_fiyati.setSuffix(" ₺")
         self.form_layout.addRow("Maliyet Fiyatı", self._maliyet_fiyati)
+
+        self._maliyet_bilinmiyor = QCheckBox("Alış fiyatı bilinmiyor")
+        self._maliyet_bilinmiyor.stateChanged.connect(self._maliyet_durumu_degisti)
+        self.form_layout.addRow("", self._maliyet_bilinmiyor)
+
+        self._guncel_borctan = QCheckBox("Güncel borçtan (maliyet borç içinde)")
+        self.form_layout.addRow("", self._guncel_borctan)
 
         # Stok
         self._stok = QSpinBox()
@@ -157,6 +164,12 @@ class UrunDialog(BaseFormDialog):
         if self._duzenleme and self._duzenleme.get("marka_modeli_id"):
             self._set_combo_by_id(self._model_combo, self._duzenleme["marka_modeli_id"])
 
+    def _maliyet_durumu_degisti(self):
+        bilinmiyor = self._maliyet_bilinmiyor.isChecked()
+        self._maliyet_fiyati.setEnabled(not bilinmiyor)
+        if bilinmiyor:
+            self._maliyet_fiyati.setValue(0)
+
     def _set_combo_by_id(self, combo: QComboBox, target_id: int):
         for i in range(combo.count()):
             if combo.itemData(i) == target_id:
@@ -171,6 +184,8 @@ class UrunDialog(BaseFormDialog):
         self._maliyet_fiyati.setValue(float(data.get("maliyet_fiyati", 0) or 0))
         self._stok.setValue(int(data.get("stok", 0)))
         self._fiziksel.setChecked(bool(data.get("fiziksel_urun_mu", True)))
+        self._maliyet_bilinmiyor.setChecked(bool(data.get("maliyet_bilinmiyor", False)))
+        self._guncel_borctan.setChecked(bool(data.get("guncel_borctan", False)))
         self._aciklama.setPlainText(data.get("aciklama", "") or "")
 
     def _dogrula(self) -> bool:
@@ -186,8 +201,8 @@ class UrunDialog(BaseFormDialog):
         if not self._model_combo.currentData():
             self._hata_label.setText("Model seçmelisiniz.")
             return False
-        if self._satis_fiyati.value() <= 0:
-            self._hata_label.setText("Satış fiyatı 0'dan büyük olmalıdır.")
+        if self._satis_fiyati.value() < 0:
+            self._hata_label.setText("Satış fiyatı negatif olamaz.")
             return False
         return True
 
@@ -199,6 +214,8 @@ class UrunDialog(BaseFormDialog):
             "aciklama": self._aciklama.toPlainText().strip() or None,
             "satis_fiyati": self._satis_fiyati.value(),
             "maliyet_fiyati": self._maliyet_fiyati.value() or None,
+            "maliyet_bilinmiyor": self._maliyet_bilinmiyor.isChecked(),
+            "guncel_borctan": self._guncel_borctan.isChecked(),
             "stok": self._stok.value(),
             "fiziksel_urun_mu": self._fiziksel.isChecked(),
             "resim_yolu": None,
