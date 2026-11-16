@@ -6,6 +6,7 @@ import '../../core/api.dart';
 import '../../core/api_client.dart';
 import '../../core/eprel_client.dart';
 import '../../core/format.dart';
+import '../../core/lastik_verileri.dart';
 import '../../ui/bilesenler.dart';
 import '../../ui/form.dart';
 import '../../ui/tema.dart';
@@ -542,10 +543,11 @@ class _ManuelEtiketFormu extends StatefulWidget {
 
 class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
   final _arama = TextEditingController();
-  final _marka = TextEditingController();
-  final _model = TextEditingController();
-  final _ebat = TextEditingController();
+  String _markaAdi = '';
+  String _modelAdi = '';
+  String _ebatAdi = '';
   String _mevsim = 'Yaz';
+  String _ebatKategori = 'Otomobil';
   final _alis = TextEditingController();
   final _satis = TextEditingController();
   int _miktar = 4;
@@ -560,9 +562,9 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
 
   @override
   void dispose() {
-    for (final c in [_arama, _marka, _model, _ebat, _alis, _satis]) {
-      c.dispose();
-    }
+    _arama.dispose();
+    _alis.dispose();
+    _satis.dispose();
     super.dispose();
   }
 
@@ -581,9 +583,9 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
 
   void _urunSec(Json u) {
     setState(() {
-      _marka.text = (u['marka_adi'] as String?) ?? '';
-      _model.text = (u['model_adi'] as String?) ?? '';
-      _ebat.text = (u['ebat'] as String?) ?? '';
+      _markaAdi = (u['marka_adi'] as String?) ?? '';
+      _modelAdi = (u['model_adi'] as String?) ?? '';
+      _ebatAdi = (u['ebat'] as String?) ?? '';
       _mevsim = (u['mevsim'] as String?) ?? 'Yaz';
       final sf = sayi(u['satis_fiyati']);
       if (sf > 0) _satis.text = paraSade(u['satis_fiyati']);
@@ -593,9 +595,44 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
     });
   }
 
+  Future<String?> _listeSec(String baslik, Future<List<String>> Function() yukle, String mevcutDeger) async {
+    final liste = await yukle();
+    if (!mounted) return null;
+    return formAc<String>(
+      context,
+      (_) => _MetinListeSec(baslik: baslik, liste: liste, mevcutDeger: mevcutDeger),
+    );
+  }
+
+  Future<void> _markaSec() async {
+    final v = await _listeSec('Marka Seç', LastikVerileri.markalar, _markaAdi);
+    if (v != null && mounted) {
+      setState(() { _markaAdi = v; _secildi = false; _secilenUrunId = null; });
+      if (!varsayilanMarkalar.contains(v)) LastikVerileri.markaEkle(v);
+    }
+  }
+
+  Future<void> _modelSec() async {
+    final v = await _listeSec('Model Seç', LastikVerileri.modeller, _modelAdi);
+    if (v != null && mounted) {
+      setState(() { _modelAdi = v; _secildi = false; _secilenUrunId = null; });
+      if (!varsayilanModeller.contains(v)) LastikVerileri.modelEkle(v);
+    }
+  }
+
+  Future<void> _ebatSec() async {
+    final v = await _listeSec('Ebat Seç', () => LastikVerileri.ebatlar(_ebatKategori), _ebatAdi);
+    if (v != null && mounted) {
+      setState(() { _ebatAdi = v; _secildi = false; _secilenUrunId = null; });
+      if (!otomobilEbatlari.contains(v) && !kamyonEbatlari.contains(v) && !tirEbatlari.contains(v)) {
+        LastikVerileri.ebatEkle(v);
+      }
+    }
+  }
+
   Future<void> _kaydet() async {
     final alis = sayiOku(_alis.text) ?? 0;
-    if (_marka.text.trim().isEmpty || _ebat.text.trim().isEmpty) {
+    if (_markaAdi.trim().isEmpty || _ebatAdi.trim().isEmpty) {
       setState(() => _hata = 'Marka ve ebat zorunludur');
       return;
     }
@@ -616,8 +653,8 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           context,
           _Kalem(
             urunId: _secilenUrunId!,
-            ad: '${_marka.text.trim()} ${_model.text.trim()} ${_ebat.text.trim()}',
-            alt: '${_ebat.text.trim()}  ·  $_mevsim',
+            ad: '$_markaAdi $_modelAdi $_ebatAdi',
+            alt: '$_ebatAdi  ·  $_mevsim',
             miktar: _miktar,
             birimFiyat: alis,
             maliyetBilinmiyor: _maliyetBilinmiyor,
@@ -625,12 +662,12 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           ),
         );
       } else {
-        final eprelNo = widget.eprelNo ?? _marka.text.trim().hashCode.abs().toString();
+        final eprelNo = widget.eprelNo ?? _markaAdi.trim().hashCode.abs().toString();
         final d = await UrunApi.eprelKaydet({
           'eprel_no': eprelNo,
-          'marka': _marka.text.trim(),
-          'model': _model.text.trim().isEmpty ? _ebat.text.trim() : _model.text.trim(),
-          'ebat': _ebat.text.trim(),
+          'marka': _markaAdi.trim(),
+          'model': _modelAdi.trim().isEmpty ? _ebatAdi.trim() : _modelAdi.trim(),
+          'ebat': _ebatAdi.trim(),
           'mevsim': _mevsim,
           'satis_fiyati': sayiOku(_satis.text) ?? 0,
           'maliyet_fiyati': alis,
@@ -644,7 +681,7 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           _Kalem(
             urunId: tamSayi(d['urun_id']),
             ad: d['urun_ad'] as String? ?? '',
-            alt: '${_ebat.text.trim()}  ·  $_mevsim',
+            alt: '$_ebatAdi  ·  $_mevsim',
             miktar: _miktar,
             birimFiyat: alis,
           ),
@@ -713,14 +750,21 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
         if (_secildi)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text('${_marka.text} ${_model.text} seçildi', style: TextStyle(color: CupertinoColors.activeBlue, fontSize: 13)),
+            child: Text('$_markaAdi $_modelAdi seçildi', style: const TextStyle(color: CupertinoColors.activeBlue, fontSize: 13)),
           ),
         Grup(
           baslik: 'Etiket Bilgisi',
+          altNot: 'Listeden seçin veya yeni değer yazın',
           children: [
-            MetinSatiri(etiket: 'Marka', kontrolcu: _marka),
-            MetinSatiri(etiket: 'Model (opsiyonel)', kontrolcu: _model),
-            MetinSatiri(etiket: 'Ebat', kontrolcu: _ebat, ipucu: '205/55R16 94V'),
+            SecimSatiri(etiket: 'Marka', deger: _markaAdi.isEmpty ? null : _markaAdi, onTap: _markaSec),
+            SecimSatiri(etiket: 'Model', deger: _modelAdi.isEmpty ? null : _modelAdi, ipucu: 'Opsiyonel', onTap: _modelSec),
+            SegmentSatiri<String>(
+              etiket: 'Araç Tipi',
+              secenekler: const {'Otomobil': 'Otomobil', 'Kamyon': 'Kamyon', 'TIR': 'TIR'},
+              secili: _ebatKategori,
+              degisti: (v) => setState(() => _ebatKategori = v),
+            ),
+            SecimSatiri(etiket: 'Ebat', deger: _ebatAdi.isEmpty ? null : _ebatAdi, onTap: _ebatSec),
             SegmentSatiri<String>(
               etiket: 'Mevsim',
               secenekler: const {'Yaz': 'Yaz', 'Kış': 'Kış', 'Dört Mevsim': '4 Mevsim'},
@@ -742,6 +786,101 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           AdimSatiri(etiket: 'Miktar', deger: _miktar, degisti: (v) => setState(() => _miktar = v)),
         ]),
       ],
+    );
+  }
+}
+
+/// Metin listesinden seçim + yeni ekleme. Arama ile filtrelenir.
+class _MetinListeSec extends StatefulWidget {
+  final String baslik;
+  final List<String> liste;
+  final String mevcutDeger;
+  const _MetinListeSec({required this.baslik, required this.liste, required this.mevcutDeger});
+
+  @override
+  State<_MetinListeSec> createState() => _MetinListeSecState();
+}
+
+class _MetinListeSecState extends State<_MetinListeSec> {
+  late List<String> _filtreli;
+  String _arama = '';
+  late final _ctrl = TextEditingController(text: widget.mevcutDeger);
+
+  @override
+  void initState() {
+    super.initState();
+    _filtreli = widget.liste;
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _filtrele(String q) {
+    setState(() {
+      _arama = q;
+      if (q.isEmpty) {
+        _filtreli = widget.liste;
+      } else {
+        final k = q.toLowerCase();
+        _filtreli = widget.liste.where((e) => e.toLowerCase().contains(k)).toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = context.renk;
+    return Material(
+      color: r.arkaplan,
+      child: Column(children: [
+        PanelBaslik(
+          widget.baslik,
+          solEylem: UstDugme(metin: 'Vazgeç', onTap: () => Navigator.pop(context)),
+          eylemler: [
+            UstDugme(metin: 'Tamam', onTap: () {
+              final v = _ctrl.text.trim();
+              if (v.isNotEmpty) Navigator.pop(context, v);
+            }),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: CupertinoTextField(
+            controller: _ctrl,
+            placeholder: 'Yazın veya listeden seçin',
+            onChanged: _filtrele,
+            autofocus: true,
+            clearButtonMode: OverlayVisibilityMode.editing,
+          ),
+        ),
+        if (_arama.isNotEmpty && _filtreli.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('"${_ctrl.text}" listede yok — Tamam ile eklenecek', style: TextStyle(color: CupertinoColors.systemGrey, fontSize: 13)),
+          ),
+        Expanded(
+          child: CupertinoScrollbar(
+            child: ListView.separated(
+              itemCount: _filtreli.length,
+              separatorBuilder: (_, __) => Divider(height: 1, color: r.ayrac),
+              itemBuilder: (_, i) {
+                final item = _filtreli[i];
+                return CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  onPressed: () => Navigator.pop(context, item),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(item, style: context.yazi.bodyLarge),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
