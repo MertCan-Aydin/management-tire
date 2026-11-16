@@ -8,6 +8,7 @@ import '../../ui/form.dart';
 import '../../ui/liste_detay.dart';
 import '../../ui/tema.dart';
 import '../../ui/veri.dart';
+import '../alim/alim_formu.dart';
 import '../barkod/barkod_screen.dart';
 import 'urun_secici.dart';
 
@@ -70,7 +71,7 @@ class _UrunListesiState extends State<_UrunListesi> with VeriYukleyici<_UrunList
         baslik: 'Ürünler',
         eylemler: [
           UstDugme(ikon: CupertinoIcons.qrcode_viewfinder, ipucu: 'Barkod okut', onTap: _barkodOkut),
-          UstDugme(ikon: CupertinoIcons.add, ipucu: 'Yeni ürün', onTap: () => urunFormuAc(context)),
+          UstDugme(ikon: CupertinoIcons.add, ipucu: 'Yeni alım', onTap: () => alimFormuAc(context)),
         ],
         arama: AramaKutusu(
           kontrolcu: _aramaKontrol,
@@ -102,7 +103,7 @@ class _UrunListesiState extends State<_UrunListesi> with VeriYukleyici<_UrunList
               ikon: CupertinoIcons.cube_box,
               baslik: hepsi.isEmpty && _arama.isEmpty ? 'Henüz ürün yok' : 'Ürün bulunamadı',
               eylem: hepsi.isEmpty && _arama.isEmpty
-                  ? CupertinoButton.filled(onPressed: () => urunFormuAc(context), child: const Text('Ürün Ekle'))
+                  ? CupertinoButton.filled(onPressed: () => alimFormuAc(context), child: const Text('Yeni Alım'))
                   : null,
             );
           }
