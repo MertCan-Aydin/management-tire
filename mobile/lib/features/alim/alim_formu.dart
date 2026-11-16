@@ -23,8 +23,10 @@ class _Kalem {
   final String alt;
   int miktar;
   double birimFiyat;
+  bool maliyetBilinmiyor;
+  bool guncelBorctan;
 
-  _Kalem({required this.urunId, required this.ad, this.alt = '', this.miktar = 1, this.birimFiyat = 0});
+  _Kalem({required this.urunId, required this.ad, this.alt = '', this.miktar = 1, this.birimFiyat = 0, this.maliyetBilinmiyor = false, this.guncelBorctan = false});
 
   double get toplam => miktar * birimFiyat;
 
@@ -47,17 +49,17 @@ class _AlimFormuState extends State<_AlimFormu> {
 
   double get _toplam => _kalemler.fold(0, (t, k) => t + k.toplam);
 
-  void _urunEkle(Json u) {
+  Future<void> _urunEkle(Json u) async {
     final id = tamSayi(u['id']);
     final mevcut = _kalemler.where((k) => k.urunId == id).firstOrNull;
-    setState(() {
-      if (mevcut != null) {
-        mevcut.miktar++;
-      } else {
-        _kalemler.add(_Kalem(urunId: id, ad: u['ad'] as String? ?? '', alt: urunAlt(u), birimFiyat: sayi(u['maliyet_fiyati'])));
-      }
-    });
-    HapticFeedback.selectionClick();
+    if (mevcut != null) {
+      setState(() => mevcut.miktar++);
+      HapticFeedback.selectionClick();
+      return;
+    }
+    final kalem = await formAc<_Kalem>(context, (_) => _UrunAlimFormu(urun: u));
+    if (kalem == null || !mounted) return;
+    setState(() => _kalemler.add(kalem));
   }
 
   Future<void> _qrOkut() async {
@@ -68,7 +70,7 @@ class _AlimFormuState extends State<_AlimFormu> {
     if (s['tip'] == 'eprel') {
       await _eprelEkle(s);
     } else {
-      _urunEkle(s);
+      await _urunEkle(s);
     }
   }
 
@@ -80,7 +82,7 @@ class _AlimFormuState extends State<_AlimFormu> {
 
   Future<void> _urunListedenSec() async {
     final u = await urunSec(context, maliyetGoster: true);
-    if (u != null && mounted) _urunEkle(u);
+    if (u != null && mounted) await _urunEkle(u);
   }
 
   Future<void> _tedarikciSec() async {
@@ -384,6 +386,94 @@ class _EprelFormuState extends State<_EprelFormu> {
             ),
           ],
         ),
+        Grup(baslik: 'Alım', children: [
+          Opacity(opacity: _maliyetBilinmiyor ? 0.4 : 1, child: AbsorbPointer(absorbing: _maliyetBilinmiyor, child: MetinSatiri.para(etiket: 'Alış Fiyatı', kontrolcu: _alis, otomatikOdak: true))),
+          AnahtarSatiri(etiket: 'Alış fiyatı bilinmiyor', deger: _maliyetBilinmiyor, degisti: (v) {
+            setState(() {
+              _maliyetBilinmiyor = v;
+              if (v) _alis.clear();
+            });
+          }),
+          AnahtarSatiri(etiket: 'Güncel borçtan', deger: _guncelBorctan, degisti: (v) => setState(() => _guncelBorctan = v)),
+          MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satis),
+          AdimSatiri(etiket: 'Miktar', deger: _miktar, degisti: (v) => setState(() => _miktar = v)),
+        ]),
+      ],
+    );
+  }
+}
+
+/// Listeden seçilen ürün için alım detayları formu.
+class _UrunAlimFormu extends StatefulWidget {
+  final Json urun;
+  const _UrunAlimFormu({required this.urun});
+
+  @override
+  State<_UrunAlimFormu> createState() => _UrunAlimFormuState();
+}
+
+class _UrunAlimFormuState extends State<_UrunAlimFormu> {
+  late final _alis = TextEditingController(text: sayi(widget.urun['maliyet_fiyati']) > 0 ? paraSade(widget.urun['maliyet_fiyati']) : '');
+  late final _satis = TextEditingController(text: sayi(widget.urun['satis_fiyati']) > 0 ? paraSade(widget.urun['satis_fiyati']) : '');
+  int _miktar = 4;
+  bool _maliyetBilinmiyor = false;
+  bool _guncelBorctan = false;
+  String? _hata;
+
+  @override
+  void dispose() {
+    _alis.dispose();
+    _satis.dispose();
+    super.dispose();
+  }
+
+  void _kaydet() {
+    final alis = sayiOku(_alis.text) ?? 0;
+    if (alis <= 0 && !_maliyetBilinmiyor && !_guncelBorctan) {
+      setState(() => _hata = 'Alış fiyatı girin veya bir seçenek işaretleyin');
+      return;
+    }
+    final satisFiyati = sayiOku(_satis.text);
+    if (satisFiyati != null && satisFiyati > 0 && satisFiyati != sayi(widget.urun['satis_fiyati'])) {
+      UrunApi.guncelle(tamSayi(widget.urun['id']), {
+        ...widget.urun,
+        'satis_fiyati': satisFiyati,
+        'maliyet_fiyati': alis > 0 ? alis : widget.urun['maliyet_fiyati'],
+        'maliyet_bilinmiyor': _maliyetBilinmiyor,
+        'guncel_borctan': _guncelBorctan,
+        'silindi_mi': false,
+      }).catchError((_) {});
+    }
+    Navigator.pop(
+      context,
+      _Kalem(
+        urunId: tamSayi(widget.urun['id']),
+        ad: widget.urun['ad'] as String? ?? '',
+        alt: urunAlt(widget.urun),
+        miktar: _miktar,
+        birimFiyat: alis,
+        maliyetBilinmiyor: _maliyetBilinmiyor,
+        guncelBorctan: _guncelBorctan,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final u = widget.urun;
+    return FormIskeleti(
+      baslik: 'Alım Detayı',
+      kaydetMetni: 'Ekle',
+      kaydet: _kaydet,
+      kaydediliyor: false,
+      hata: _hata,
+      children: [
+        Grup(baslik: 'Ürün', children: [
+          BilgiSatiri('Ürün', u['ad'] as String?),
+          BilgiSatiri('Ebat', u['ebat'] as String?),
+          BilgiSatiri('Marka', u['marka_adi'] as String?),
+          BilgiSatiri('Model', u['model_adi'] as String?),
+        ]),
         Grup(baslik: 'Alım', children: [
           Opacity(opacity: _maliyetBilinmiyor ? 0.4 : 1, child: AbsorbPointer(absorbing: _maliyetBilinmiyor, child: MetinSatiri.para(etiket: 'Alış Fiyatı', kontrolcu: _alis, otomatikOdak: true))),
           AnahtarSatiri(etiket: 'Alış fiyatı bilinmiyor', deger: _maliyetBilinmiyor, degisti: (v) {
