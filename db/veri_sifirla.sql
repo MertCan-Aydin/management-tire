@@ -15,6 +15,7 @@ TRUNCATE TABLE tedarikci_odemeleri;
 TRUNCATE TABLE tedarikci_kisileri;
 TRUNCATE TABLE giderler;
 TRUNCATE TABLE lastik_oteli;
+TRUNCATE TABLE aktivite_loglari;
 
 -- Ürün hiyerarşisi
 TRUNCATE TABLE urunler;

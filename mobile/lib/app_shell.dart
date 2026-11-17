@@ -12,6 +12,8 @@ import 'features/raporlar/raporlar_sayfasi.dart';
 import 'features/satis/satislar_sayfasi.dart';
 import 'features/tedarikciler/tedarikciler_sayfasi.dart';
 import 'features/urunler/urunler_sayfasi.dart';
+import 'features/loglar/loglar_sayfasi.dart';
+import 'features/taslaklar/taslaklar_sayfasi.dart';
 import 'ui/bilesenler.dart';
 import 'ui/tema.dart';
 
@@ -33,6 +35,8 @@ final _moduller = <_Modul>[
   _Modul('Müşteriler', CupertinoIcons.person_2_fill, (r) => const Color(0xFF5856D6), () => const MusterilerSayfasi()),
   _Modul('Giderler', CupertinoIcons.creditcard_fill, (r) => r.tehlike, () => const GiderlerSayfasi()),
   _Modul('Raporlar', CupertinoIcons.chart_bar_alt_fill, (r) => const Color(0xFFFF2D55), () => const RaporlarSayfasi()),
+  _Modul('Taslaklar', CupertinoIcons.doc, (r) => r.uyari, () => const TaslaklarSayfasi()),
+  _Modul('Loglar', CupertinoIcons.doc_text, (r) => r.ikincil, () => const LoglarSayfasi()),
 ];
 
 /// Kenar çubuğundaki gruplar (modül indeksleri).
@@ -41,6 +45,7 @@ const _kenarGruplari = <(String, List<int>)>[
   ('Stok', [3, 4, 5]),
   ('Kayıtlar', [6, 7]),
   ('Analiz', [8]),
+  ('Sistem', [9, 10]),
 ];
 
 /// Telefonda alt sekmede görünen modüller; geri kalanı "Diğer" altında.

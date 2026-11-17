@@ -22,6 +22,7 @@ from .presentation import (
     lastik_oteli_router,
     lastik_veri_router,
     aktivite_router,
+    taslak_router,
 )
 
 # ── Loglama ──────────────────────────────────────────────────────────────────
@@ -123,6 +124,7 @@ app.include_router(rapor_router.router,       prefix="/api/raporlar",      tags=
 app.include_router(lastik_oteli_router.router, prefix="/api/lastik-oteli", tags=["Lastik Oteli"])
 app.include_router(lastik_veri_router.router,  prefix="/api/lastik-verileri", tags=["Lastik Verileri"])
 app.include_router(aktivite_router.router,     prefix="/api/loglar",          tags=["Aktivite Logları"])
+app.include_router(taslak_router.router,       prefix="/api/taslaklar",       tags=["Taslaklar"])
 
 
 # ── Sağlık Kontrolü ──────────────────────────────────────────────────────────

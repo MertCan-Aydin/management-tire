@@ -180,6 +180,30 @@ class _GiderFormuState extends State<_GiderFormu> {
     }
   }
 
+  Future<void> _taslakKaydet() async {
+    final baslik = _aciklama.text.trim().isEmpty ? 'Gider taslağı' : _aciklama.text.trim();
+    final veri = <String, dynamic>{
+      'aciklama': _aciklama.text.trim(),
+      'tutar': _tutar.text.trim(),
+      'kategori': _kategori,
+      'urun_adi': _urunAdi.text.trim(),
+      'marka': _marka.text.trim(),
+      'alis_fiyati': _alisFiyati.text.trim(),
+      'satis_fiyati': _satisFiyati.text.trim(),
+      'yil': _yil.text.trim(),
+      'maliyet_bilinmiyor': _maliyetBilinmiyor,
+    };
+    try {
+      await TaslakApi.ekle('gider', baslik, veri);
+      veriDegisti();
+      if (!mounted) return;
+      bildir(context, 'Taslak kaydedildi');
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() => _hata = hataMesaji(e));
+    }
+  }
+
   Future<void> _sil() async {
     final onay = await onayla(context,
         baslik: 'Gideri Sil', mesaj: '"${widget.mevcut!['aciklama']}" silinecek.', onayMetni: 'Sil', yikici: true);
@@ -251,6 +275,8 @@ class _GiderFormuState extends State<_GiderFormu> {
                 ),
             ]),
           ),
+        if (widget.mevcut == null)
+          Grup(children: [EylemSatiri('Taslak Olarak Kaydet', ikon: CupertinoIcons.doc, onTap: _taslakKaydet)]),
         if (widget.mevcut != null) Grup(children: [EylemSatiri('Gideri Sil', yikici: true, onTap: _sil)]),
       ],
     );

@@ -125,6 +125,19 @@ class OtelApi {
 class AktiviteApi {
   static Future<void> sayfaLog(String sayfa) =>
       _c.post('/api/loglar', data: {'islem_tipi': 'sayfa_goruntulem', 'sayfa': sayfa}).catchError((_) {});
+  static Future<List<Json>> liste({int limit = 200, String? islemTipi}) =>
+      _liste('/api/loglar', {'limit': limit, if (islemTipi != null) 'islem_tipi': islemTipi});
+}
+
+class TaslakApi {
+  static Future<List<Json>> liste({String? formTipi}) =>
+      _liste('/api/taslaklar', {if (formTipi != null) 'form_tipi': formTipi});
+  static Future<Json> getir(int id) => _tek('/api/taslaklar/$id');
+  static Future<int> ekle(String formTipi, String? baslik, Json veri) =>
+      _ekle('/api/taslaklar', {'form_tipi': formTipi, 'baslik': baslik, 'veri': veri});
+  static Future<void> guncelle(int id, String? baslik, Json veri) =>
+      _c.put('/api/taslaklar/$id', data: {'baslik': baslik, 'veri': veri});
+  static Future<void> sil(int id) => _c.delete('/api/taslaklar/$id');
 }
 
 class RaporApi {

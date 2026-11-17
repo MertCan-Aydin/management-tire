@@ -838,8 +838,37 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satis),
           AdimSatiri(etiket: 'Miktar', deger: _miktar, degisti: (v) => setState(() => _miktar = v)),
         ]),
+        Grup(children: [EylemSatiri('Taslak Olarak Kaydet', ikon: CupertinoIcons.doc, onTap: _taslakKaydet)]),
       ],
     );
+  }
+
+  Future<void> _taslakKaydet() async {
+    final baslik = '${_markaAdi.isEmpty ? "" : _markaAdi} ${_modelAdi.isEmpty ? "" : _modelAdi} ${_ebatAdi.isEmpty ? "" : _ebatAdi}'.trim();
+    final veri = <String, dynamic>{
+      'marka': _markaAdi,
+      'model': _modelAdi,
+      'ebat': _ebatAdi,
+      'mevsim': _mevsim,
+      'yuk_hiz': _yukHiz.text.trim(),
+      'ekstra_yuk': _ekstraYuk,
+      'uretim_yili': _uretimYili.text.trim(),
+      'alis': _alis.text.trim(),
+      'satis': _satis.text.trim(),
+      'miktar': _miktar,
+      'maliyet_bilinmiyor': _maliyetBilinmiyor,
+      'guncel_borctan': _guncelBorctan,
+    };
+    try {
+      await TaslakApi.ekle('alim', baslik.isEmpty ? 'Alım taslağı' : baslik, veri);
+      veriDegisti();
+      if (!mounted) return;
+      bildir(context, 'Taslak kaydedildi');
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      bildir(context, 'Taslak kaydedilemedi');
+    }
   }
 }
 
