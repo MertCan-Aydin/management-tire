@@ -91,28 +91,31 @@ class _GiderlerSayfasiState extends State<GiderlerSayfasi> with VeriYukleyici<Gi
   }
 }
 
-Future<void> giderFormuAc(BuildContext context, {Json? mevcut}) =>
-    formAc(context, (_) => _GiderFormu(mevcut: mevcut), genislik: 500);
+Future<void> giderFormuAc(BuildContext context, {Json? mevcut, Json? taslakVeri, int? taslakId}) =>
+    formAc(context, (_) => _GiderFormu(mevcut: mevcut, taslakVeri: taslakVeri, taslakId: taslakId), genislik: 500);
 
 class _GiderFormu extends StatefulWidget {
   final Json? mevcut;
-  const _GiderFormu({this.mevcut});
+  final Json? taslakVeri;
+  final int? taslakId;
+  const _GiderFormu({this.mevcut, this.taslakVeri, this.taslakId});
 
   @override
   State<_GiderFormu> createState() => _GiderFormuState();
 }
 
 class _GiderFormuState extends State<_GiderFormu> {
-  late final _aciklama = TextEditingController(text: widget.mevcut?['aciklama'] as String? ?? '');
-  late final _tutar = TextEditingController(text: widget.mevcut == null ? '' : paraSade(widget.mevcut!['tutar']));
+  Json? get _vk => widget.taslakVeri ?? widget.mevcut;
+  late final _aciklama = TextEditingController(text: _vk?['aciklama'] as String? ?? '');
+  late final _tutar = TextEditingController(text: _vk?['tutar'] != null ? (_vk!['tutar'] is String ? _vk!['tutar'] as String : paraSade(_vk!['tutar'])) : '');
   late DateTime _tarih = tarihOku(widget.mevcut?['tarih']) ?? DateTime.now();
-  late String? _kategori = widget.mevcut?['kategori'] as String?;
-  late final _urunAdi = TextEditingController(text: widget.mevcut?['urun_adi'] as String? ?? '');
-  late final _marka = TextEditingController(text: widget.mevcut?['marka'] as String? ?? '');
-  late final _alisFiyati = TextEditingController(text: widget.mevcut?['alis_fiyati'] != null ? paraSade(widget.mevcut!['alis_fiyati']) : '');
-  late final _satisFiyati = TextEditingController(text: widget.mevcut?['satis_fiyati'] != null ? paraSade(widget.mevcut!['satis_fiyati']) : '');
-  late final _yil = TextEditingController(text: widget.mevcut?['yil']?.toString() ?? '');
-  late bool _maliyetBilinmiyor = widget.mevcut?['maliyet_bilinmiyor'] == true || widget.mevcut?['maliyet_bilinmiyor'] == 1;
+  late String? _kategori = _vk?['kategori'] as String?;
+  late final _urunAdi = TextEditingController(text: _vk?['urun_adi'] as String? ?? '');
+  late final _marka = TextEditingController(text: _vk?['marka'] as String? ?? '');
+  late final _alisFiyati = TextEditingController(text: _vk?['alis_fiyati'] != null ? (_vk!['alis_fiyati'] is String ? _vk!['alis_fiyati'] as String : paraSade(_vk!['alis_fiyati'])) : '');
+  late final _satisFiyati = TextEditingController(text: _vk?['satis_fiyati'] != null ? (_vk!['satis_fiyati'] is String ? _vk!['satis_fiyati'] as String : paraSade(_vk!['satis_fiyati'])) : '');
+  late final _yil = TextEditingController(text: _vk?['yil']?.toString() ?? '');
+  late bool _maliyetBilinmiyor = _vk?['maliyet_bilinmiyor'] == true || _vk?['maliyet_bilinmiyor'] == 1;
   bool _kaydediliyor = false;
   String? _hata;
 
@@ -167,6 +170,9 @@ class _GiderFormuState extends State<_GiderFormu> {
         final eski = tarihOku(widget.mevcut!['tarih']) ?? DateTime.now();
         final yeni = DateTime(_tarih.year, _tarih.month, _tarih.day, eski.hour, eski.minute, eski.second);
         await GiderApi.guncelle(tamSayi(widget.mevcut!['id']), {...v, 'tarih': yeni.toIso8601String()});
+      }
+      if (widget.taslakId != null) {
+        try { await TaslakApi.sil(widget.taslakId!); } catch (_) {}
       }
       veriDegisti();
       if (!mounted) return;
@@ -223,7 +229,7 @@ class _GiderFormuState extends State<_GiderFormu> {
   Widget build(BuildContext context) {
     final r = context.renk;
     return FormIskeleti(
-      baslik: widget.mevcut == null ? 'Yeni Gider' : 'Gideri Düzenle',
+      baslik: widget.taslakVeri != null ? 'Taslaktan Devam' : widget.mevcut == null ? 'Yeni Gider' : 'Gideri Düzenle',
       kaydet: _kaydet,
       kaydediliyor: _kaydediliyor,
       hata: _hata,
@@ -275,7 +281,7 @@ class _GiderFormuState extends State<_GiderFormu> {
                 ),
             ]),
           ),
-        if (widget.mevcut == null)
+        if (widget.mevcut == null && widget.taslakVeri == null)
           Grup(children: [EylemSatiri('Taslak Olarak Kaydet', ikon: CupertinoIcons.doc, onTap: _taslakKaydet)]),
         if (widget.mevcut != null) Grup(children: [EylemSatiri('Gideri Sil', yikici: true, onTap: _sil)]),
       ],

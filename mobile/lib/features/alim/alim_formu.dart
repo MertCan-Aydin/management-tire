@@ -20,6 +20,12 @@ Future<void> alimFormuAc(BuildContext context, {Json? tedarikci}) => Navigator.o
       builder: (_) => Scaffold(body: SafeArea(child: _AlimFormu(tedarikci: tedarikci))),
     ));
 
+Future<void> alimFormuAcTaslakli(BuildContext context, {required Json taslakVeri, required int taslakId}) =>
+    Navigator.of(context).push(CupertinoPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => Scaffold(body: SafeArea(child: _ManuelEtiketFormu(taslakVeri: taslakVeri, taslakId: taslakId))),
+    ));
+
 class _Kalem {
   final int urunId;
   final String ad;
@@ -561,26 +567,29 @@ class _UrunAlimFormuState extends State<_UrunAlimFormu> {
 /// Üstte arama kutusu ile mevcut ürünler aranabilir; seçilince form otomatik dolar.
 class _ManuelEtiketFormu extends StatefulWidget {
   final String? eprelNo;
-  const _ManuelEtiketFormu({this.eprelNo});
+  final Json? taslakVeri;
+  final int? taslakId;
+  const _ManuelEtiketFormu({this.eprelNo, this.taslakVeri, this.taslakId});
 
   @override
   State<_ManuelEtiketFormu> createState() => _ManuelEtiketFormuState();
 }
 
 class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
+  Json? get _tv => widget.taslakVeri;
   final _arama = TextEditingController();
-  String _markaAdi = '';
-  String _modelAdi = '';
-  String _ebatAdi = '';
-  String _mevsim = 'Yaz';
-  final _yukHiz = TextEditingController();
-  bool _ekstraYuk = false;
-  final _uretimYili = TextEditingController();
-  final _alis = TextEditingController();
-  final _satis = TextEditingController();
-  int _miktar = 4;
-  bool _maliyetBilinmiyor = false;
-  bool _guncelBorctan = false;
+  late String _markaAdi = _tv?['marka'] as String? ?? '';
+  late String _modelAdi = _tv?['model'] as String? ?? '';
+  late String _ebatAdi = _tv?['ebat'] as String? ?? '';
+  late String _mevsim = _tv?['mevsim'] as String? ?? 'Yaz';
+  late final _yukHiz = TextEditingController(text: _tv?['yuk_hiz'] as String? ?? '');
+  late bool _ekstraYuk = _tv?['ekstra_yuk'] == true;
+  late final _uretimYili = TextEditingController(text: _tv?['uretim_yili'] as String? ?? '');
+  late final _alis = TextEditingController(text: _tv?['alis'] as String? ?? '');
+  late final _satis = TextEditingController(text: _tv?['satis'] as String? ?? '');
+  late int _miktar = _tv?['miktar'] as int? ?? 4;
+  late bool _maliyetBilinmiyor = _tv?['maliyet_bilinmiyor'] == true;
+  late bool _guncelBorctan = _tv?['guncel_borctan'] == true;
   bool _kaydediliyor = false;
   String? _hata;
   List<Json> _sonuclar = [];
@@ -698,6 +707,9 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
         if (satisYeni > 0 && satisYeni != mevcutSatis) {
           await UrunApi.guncelle(_secilenUrunId!, (await UrunApi.getir(_secilenUrunId!))..['satis_fiyati'] = satisYeni);
         }
+        if (widget.taslakId != null) {
+          try { await TaslakApi.sil(widget.taslakId!); } catch (_) {}
+        }
         if (!mounted) return;
         Navigator.pop(
           context,
@@ -729,6 +741,9 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           'maliyet_bilinmiyor': _maliyetBilinmiyor,
           'guncel_borctan': _guncelBorctan,
         });
+        if (widget.taslakId != null) {
+          try { await TaslakApi.sil(widget.taslakId!); } catch (_) {}
+        }
         if (!mounted) return;
         if (dogruMu(d['yeni_mi'])) bildir(context, 'Yeni ürün oluşturuldu: ${d['urun_ad']}');
         Navigator.pop(
@@ -750,7 +765,7 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
   @override
   Widget build(BuildContext context) {
     return FormIskeleti(
-      baslik: 'Etiket Bilgilerini Gir',
+      baslik: widget.taslakVeri != null ? 'Taslaktan Devam' : 'Etiket Bilgilerini Gir',
       kaydetMetni: 'Ekle',
       kaydet: _kaydet,
       kaydediliyor: _kaydediliyor,
@@ -838,7 +853,8 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satis),
           AdimSatiri(etiket: 'Miktar', deger: _miktar, degisti: (v) => setState(() => _miktar = v)),
         ]),
-        Grup(children: [EylemSatiri('Taslak Olarak Kaydet', ikon: CupertinoIcons.doc, onTap: _taslakKaydet)]),
+        if (widget.taslakVeri == null)
+          Grup(children: [EylemSatiri('Taslak Olarak Kaydet', ikon: CupertinoIcons.doc, onTap: _taslakKaydet)]),
       ],
     );
   }

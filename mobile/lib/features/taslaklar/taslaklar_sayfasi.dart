@@ -6,6 +6,8 @@ import '../../core/format.dart';
 import '../../ui/bilesenler.dart';
 import '../../ui/tema.dart';
 import '../../ui/veri.dart';
+import '../giderler/giderler_sayfasi.dart';
+import '../alim/alim_formu.dart';
 
 class TaslaklarSayfasi extends StatefulWidget {
   const TaslaklarSayfasi({super.key});
@@ -81,103 +83,16 @@ class _TaslaklarSayfasiState extends State<TaslaklarSayfasi> with VeriYukleyici<
     }
   }
 
-  void _devamEt(Json taslak) {
+  Future<void> _devamEt(Json taslak) async {
     final formTipi = taslak['form_tipi'] as String;
     final veri = taslak['veri'] as Map<String, dynamic>? ?? {};
     final taslakId = tamSayi(taslak['id']);
 
     if (formTipi == 'gider') {
-      _giderDevam(veri, taslakId);
+      await giderFormuAc(context, taslakVeri: veri, taslakId: taslakId);
     } else if (formTipi == 'alim') {
-      _alimDevam(veri, taslakId);
+      await alimFormuAcTaslakli(context, taslakVeri: veri, taslakId: taslakId);
     }
-  }
-
-  Future<void> _giderDevam(Json veri, int taslakId) async {
-    final silindi = await Navigator.push<bool>(
-      context,
-      CupertinoPageRoute(builder: (_) => _TaslakGiderFormu(veri: veri, taslakId: taslakId)),
-    );
-    if (silindi == true) yenile();
-  }
-
-  Future<void> _alimDevam(Json veri, int taslakId) async {
-    final silindi = await Navigator.push<bool>(
-      context,
-      CupertinoPageRoute(builder: (_) => _TaslakAlimFormu(veri: veri, taslakId: taslakId)),
-    );
-    if (silindi == true) yenile();
-  }
-}
-
-class _TaslakGiderFormu extends StatelessWidget {
-  final Json veri;
-  final int taslakId;
-  const _TaslakGiderFormu({required this.veri, required this.taslakId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(CupertinoIcons.doc_text, size: 48),
-              const SizedBox(height: 16),
-              Text('Gider Taslağı', style: context.yazi.titleMedium),
-              const SizedBox(height: 8),
-              Text('Bu taslaktaki verileri gider formunda kullanabilirsiniz.', textAlign: TextAlign.center, style: context.yazi.bodyMedium),
-              const SizedBox(height: 24),
-              CupertinoButton.filled(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  // Gider formunu taslak verileriyle aç
-                  final nav = Navigator.of(context, rootNavigator: true);
-                  await _giderFormuAcTaslakli(context, veri, taslakId);
-                },
-                child: const Text('Formu Aç'),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _giderFormuAcTaslakli(BuildContext context, Json veri, int taslakId) async {
-    // Import cycle'dan kaçınmak için direkt API çağrısı yapalım
-    // Taslak silinir, formu açan sayfa yenilenir
-  }
-}
-
-class _TaslakAlimFormu extends StatelessWidget {
-  final Json veri;
-  final int taslakId;
-  const _TaslakAlimFormu({required this.veri, required this.taslakId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(CupertinoIcons.doc_text, size: 48),
-              const SizedBox(height: 16),
-              Text('Alım Taslağı', style: context.yazi.titleMedium),
-              const SizedBox(height: 8),
-              Text('Bu taslaktaki verileri alım formunda kullanabilirsiniz.', textAlign: TextAlign.center, style: context.yazi.bodyMedium),
-              const SizedBox(height: 24),
-              CupertinoButton.filled(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tamam'),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    );
+    yenile();
   }
 }
