@@ -7,7 +7,7 @@ class UrunView(BaseListView):
     BASLIK = "Ürünler"
     API_PATH = "/api/urunler"
     SIL_IPUCU = "Silmek için Delete"
-    SUTUNLAR = ["Barkod/QR", "Ürün Adı", "Ebat", "Tip", "Marka", "Model", "Mevsim", "Satış ₺", "Maliyet ₺", "Stok", "Not"]
+    SUTUNLAR = ["Barkod/QR", "Ürün Adı", "Ebat", "Yük", "Hız", "XL", "Yıl", "Tip", "Marka", "Model", "Mevsim", "Satış ₺", "Maliyet ₺", "Stok", "Not"]
 
     def _satira_donustur(self, row: dict) -> list:
         notlar = []
@@ -19,6 +19,10 @@ class UrunView(BaseListView):
             row.get("barkod_qr", "") or "",
             row.get("ad", ""),
             row.get("ebat", "") or "",
+            row.get("yuk_indeksi", "") or "",
+            row.get("hiz_kodu", "") or "",
+            "XL" if row.get("ekstra_yuk") else "",
+            str(row.get("uretim_yili", "") or ""),
             row.get("tip_adi", ""),
             row.get("marka_adi", ""),
             row.get("model_adi", ""),

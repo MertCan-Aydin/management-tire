@@ -111,9 +111,12 @@ def eprel_kaydet(cursor, req) -> dict:
         if mevcut:
             urun_dal.urun_geri_aktiflestir(cursor, mevcut["id"])
 
-    # 2. Bulunamadıysa marka + model + ebat ile ara
+    # 2. Bulunamadıysa marka + model + ebat + takılar ile ara
     if not mevcut:
-        mevcut = urun_dal.urun_ad_ile_bul(cursor, req.marka, req.model, req.ebat)
+        mevcut = urun_dal.urun_ad_ile_bul(
+            cursor, req.marka, req.model, req.ebat,
+            req.yuk_indeksi, req.hiz_kodu, req.ekstra_yuk, req.uretim_yili,
+        )
         if mevcut and mevcut.get("silindi_mi"):
             urun_dal.urun_geri_aktiflestir(cursor, mevcut["id"])
         if mevcut:
@@ -126,18 +129,36 @@ def eprel_kaydet(cursor, req) -> dict:
             "yeni_mi": False,
             "satis_fiyati": float(mevcut.get("satis_fiyati") or 0),
             "maliyet_fiyati": float(mevcut.get("maliyet_fiyati") or 0),
+            "yuk_indeksi": mevcut.get("yuk_indeksi"),
+            "hiz_kodu": mevcut.get("hiz_kodu"),
+            "ekstra_yuk": bool(mevcut.get("ekstra_yuk", False)),
+            "uretim_yili": mevcut.get("uretim_yili"),
         }
 
     tip_id = urun_dal.urun_tipi_bul_veya_olustur(cursor, "Lastik")
     marka_id = urun_dal.urun_markasi_bul_veya_olustur(cursor, tip_id, req.marka)
     model_id = urun_dal.urun_modeli_bul_veya_olustur(cursor, marka_id, req.model, req.mevsim)
 
+    taki = ""
+    if req.yuk_indeksi:
+        taki += req.yuk_indeksi
+    if req.hiz_kodu:
+        taki += req.hiz_kodu
+    if req.ekstra_yuk:
+        taki += " XL"
     urun_ad = f"{req.marka} {req.model} {req.ebat}"
+    if taki.strip():
+        urun_ad += f" {taki.strip()}"
+
     satis_f = req.satis_fiyati if req.satis_fiyati > 0 else 0.01
     urun_id = urun_dal.urun_ekle(cursor, {
         "barkod_qr": req.eprel_no,
         "ad": urun_ad,
         "ebat": req.ebat,
+        "yuk_indeksi": req.yuk_indeksi,
+        "hiz_kodu": req.hiz_kodu,
+        "ekstra_yuk": req.ekstra_yuk,
+        "uretim_yili": req.uretim_yili,
         "aciklama": None,
         "satis_fiyati": satis_f,
         "maliyet_fiyati": req.maliyet_fiyati,
@@ -156,6 +177,10 @@ def eprel_kaydet(cursor, req) -> dict:
         "yeni_mi": True,
         "satis_fiyati": satis_f,
         "maliyet_fiyati": req.maliyet_fiyati,
+        "yuk_indeksi": req.yuk_indeksi,
+        "hiz_kodu": req.hiz_kodu,
+        "ekstra_yuk": req.ekstra_yuk,
+        "uretim_yili": req.uretim_yili,
     }
 
 

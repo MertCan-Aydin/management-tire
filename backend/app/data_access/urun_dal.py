@@ -91,7 +91,10 @@ def urun_barkod_ara(cursor, barkod: str) -> dict | None:
 
 def urun_ekle(cursor, data: dict) -> int:
     row = call_sp_one(cursor, "sp_urunler_ekle", [
-        data["barkod_qr"], data["ad"], data["ebat"], data["aciklama"],
+        data["barkod_qr"], data["ad"], data["ebat"],
+        data.get("yuk_indeksi"), data.get("hiz_kodu"),
+        int(data.get("ekstra_yuk", False)), data.get("uretim_yili"),
+        data["aciklama"],
         data["satis_fiyati"], data["maliyet_fiyati"],
         int(data.get("maliyet_bilinmiyor", False)),
         int(data.get("guncel_borctan", False)),
@@ -105,7 +108,10 @@ def urun_ekle(cursor, data: dict) -> int:
 def urun_guncelle(cursor, urun_id: int, data: dict) -> None:
     call_sp(cursor, "sp_urunler_guncelle", [
         urun_id,
-        data["barkod_qr"], data["ad"], data["ebat"], data["aciklama"],
+        data["barkod_qr"], data["ad"], data["ebat"],
+        data.get("yuk_indeksi"), data.get("hiz_kodu"),
+        int(data.get("ekstra_yuk", False)), data.get("uretim_yili"),
+        data["aciklama"],
         data["satis_fiyati"], data["maliyet_fiyati"],
         int(data.get("maliyet_bilinmiyor", False)),
         int(data.get("guncel_borctan", False)),
@@ -152,17 +158,12 @@ def urun_geri_aktiflestir(cursor, urun_id: int) -> None:
     cursor.execute("UPDATE urunler SET silindi_mi = 0 WHERE id = %s", [urun_id])
 
 
-def urun_ad_ile_bul(cursor, marka: str, model: str, ebat: str) -> dict | None:
-    cursor.execute(
-        """SELECT u.id, u.ad, u.satis_fiyati, u.maliyet_fiyati, u.barkod_qr, u.silindi_mi
-           FROM urunler u
-           JOIN urun_markalari m ON m.id = u.marka_id
-           JOIN urun_marka_modelleri mm ON mm.id = u.marka_modeli_id
-           WHERE m.ad = %s AND mm.ad = %s AND u.ebat = %s
-           LIMIT 1""",
-        [marka, model, ebat],
-    )
-    return cursor.fetchone()
+def urun_ad_ile_bul(cursor, marka: str, model: str, ebat: str,
+                     yuk_indeksi: str | None = None, hiz_kodu: str | None = None,
+                     ekstra_yuk: bool = False, uretim_yili: int | None = None) -> dict | None:
+    return call_sp_one(cursor, "sp_urun_tam_eslesme_bul", [
+        marka, model, ebat, yuk_indeksi, hiz_kodu, int(ekstra_yuk), uretim_yili,
+    ])
 
 
 def urun_barkod_guncelle(cursor, urun_id: int, yeni_barkod: str) -> None:

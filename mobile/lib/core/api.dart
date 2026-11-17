@@ -122,6 +122,11 @@ class OtelApi {
   static Future<void> sil(int id) => _c.delete('/api/lastik-oteli/$id');
 }
 
+class AktiviteApi {
+  static Future<void> sayfaLog(String sayfa) =>
+      _c.post('/api/loglar', data: {'islem_tipi': 'sayfa_goruntulem', 'sayfa': sayfa}).catchError((_) {});
+}
+
 class RaporApi {
   static Future<Json> dashboard() => _tek('/api/raporlar/dashboard');
   static Future<Json> aralik(String bas, String bit) => _tek('/api/raporlar/aralik', {'baslangic': bas, 'bitis': bit});

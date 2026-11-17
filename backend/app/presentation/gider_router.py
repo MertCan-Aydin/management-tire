@@ -15,9 +15,10 @@ def listele(
     bitis: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    kategori: Optional[str] = Query(None),
 ):
     with get_cursor() as (cursor, _):
-        return gider_service.listele(cursor, baslangic, bitis, limit, offset)
+        return gider_service.listele(cursor, baslangic, bitis, limit, offset, kategori)
 
 
 @router.get("/{gid}")

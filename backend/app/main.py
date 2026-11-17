@@ -8,7 +8,8 @@ from fastapi.responses import JSONResponse
 import pymysql
 
 from .core.config import settings
-from .core.db import _new_connection
+from .core.db import _new_connection, get_cursor
+from .core.security import decode_access_token
 from .presentation import (
     auth_router,
     urun_router,
@@ -20,6 +21,7 @@ from .presentation import (
     rapor_router,
     lastik_oteli_router,
     lastik_veri_router,
+    aktivite_router,
 )
 
 # ── Loglama ──────────────────────────────────────────────────────────────────
@@ -66,6 +68,25 @@ async def correlation_id_middleware(request: Request, call_next):
     request.state.cid = cid
     response = await call_next(request)
     response.headers["X-Correlation-ID"] = cid
+
+    if request.method in ("POST", "PUT", "DELETE") and 200 <= response.status_code < 300:
+        try:
+            kullanici_id = None
+            auth = request.headers.get("authorization", "")
+            if auth.startswith("Bearer "):
+                payload = decode_access_token(auth[7:])
+                if payload:
+                    kullanici_id = payload.get("id")
+            ip = request.client.host if request.client else None
+            from .data_access import aktivite_dal
+            with get_cursor() as (cursor, _):
+                aktivite_dal.log_ekle(
+                    cursor, kullanici_id, request.method,
+                    request.url.path, None, ip,
+                )
+        except Exception:
+            pass
+
     return response
 
 
@@ -101,6 +122,7 @@ app.include_router(gider_router.router,     prefix="/api/giderler",     tags=["G
 app.include_router(rapor_router.router,       prefix="/api/raporlar",      tags=["Raporlar"])
 app.include_router(lastik_oteli_router.router, prefix="/api/lastik-oteli", tags=["Lastik Oteli"])
 app.include_router(lastik_veri_router.router,  prefix="/api/lastik-verileri", tags=["Lastik Verileri"])
+app.include_router(aktivite_router.router,     prefix="/api/loglar",          tags=["Aktivite Logları"])
 
 
 # ── Sağlık Kontrolü ──────────────────────────────────────────────────────────

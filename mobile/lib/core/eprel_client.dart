@@ -6,6 +6,10 @@ class EprelUrun {
   final String model;
   final String ebat;
   final String mevsim;
+  final String? yukIndeksi;
+  final String? hizKodu;
+  final bool ekstraYuk;
+  final int? uretimYili;
 
   const EprelUrun({
     required this.eprelNo,
@@ -13,6 +17,10 @@ class EprelUrun {
     required this.model,
     required this.ebat,
     required this.mevsim,
+    this.yukIndeksi,
+    this.hizKodu,
+    this.ekstraYuk = false,
+    this.uretimYili,
   });
 
   Map<String, dynamic> toMap() => {
@@ -22,6 +30,10 @@ class EprelUrun {
         'model': model,
         'ebat': ebat,
         'mevsim': mevsim,
+        'yuk_indeksi': yukIndeksi,
+        'hiz_kodu': hizKodu,
+        'ekstra_yuk': ekstraYuk,
+        'uretim_yili': uretimYili,
       };
 }
 
@@ -59,12 +71,28 @@ class EprelClient {
         ? (details!['commercialName'] as String).trim()
         : (data['modelIdentifier'] as String? ?? '').trim();
 
+    final yukIndeksi = _str(data['loadCapacityIndex'] ?? data['loadIndex']);
+    final hizKodu = _str(data['speedRating'] ?? data['speedCategory']);
+    final ekstraYuk = data['extraLoad'] == true || data['reinforced'] == true;
+    final yilRaw = data['onMarketStartDateYear'] ?? data['onMarketStartYear'];
+    final uretimYili = yilRaw is int ? yilRaw : int.tryParse('$yilRaw');
+
     return EprelUrun(
       eprelNo: eprelNo,
       marka: (data['supplierOrTrademark'] as String? ?? '').trim(),
       model: modelAd,
       ebat: (data['sizeDesignation'] as String? ?? '').trim(),
       mevsim: mevsim,
+      yukIndeksi: yukIndeksi,
+      hizKodu: hizKodu,
+      ekstraYuk: ekstraYuk,
+      uretimYili: uretimYili,
     );
+  }
+
+  static String? _str(dynamic v) {
+    if (v == null) return null;
+    final s = '$v'.trim();
+    return s.isEmpty ? null : s;
   }
 }

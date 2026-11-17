@@ -8,12 +8,14 @@ class GiderView(BaseListView):
     BASLIK = "Giderler"
     API_PATH = "/api/giderler"
     SIL_IPUCU = "Silmek için Delete"
-    SUTUNLAR = ["Tarih", "Açıklama", "Tutar (₺)"]
+    SUTUNLAR = ["Tarih", "Kategori", "Açıklama", "Ürün", "Tutar (₺)"]
 
     def _satira_donustur(self, row: dict) -> list:
         return [
             str(row.get("tarih", ""))[:16],
+            row.get("kategori", "") or "",
             row.get("aciklama", ""),
+            row.get("urun_adi", "") or "",
             tr_para(row.get('tutar', 0)),
         ]
 

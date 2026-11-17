@@ -6,6 +6,10 @@ class UrunEkleRequest(BaseModel):
     barkod_qr: Optional[str] = None
     ad: str
     ebat: Optional[str] = None
+    yuk_indeksi: Optional[str] = None
+    hiz_kodu: Optional[str] = None
+    ekstra_yuk: bool = False
+    uretim_yili: Optional[int] = None
     aciklama: Optional[str] = None
     satis_fiyati: float
     maliyet_fiyati: Optional[float] = None
@@ -79,6 +83,10 @@ class EprelKaydetRequest(BaseModel):
     model: str
     ebat: str
     mevsim: str
+    yuk_indeksi: Optional[str] = None
+    hiz_kodu: Optional[str] = None
+    ekstra_yuk: bool = False
+    uretim_yili: Optional[int] = None
     satis_fiyati: float = 0.0
     maliyet_fiyati: float = 0.0
     maliyet_bilinmiyor: bool = False
@@ -98,3 +106,7 @@ class EprelKaydetResponse(BaseModel):
     yeni_mi: bool
     satis_fiyati: float
     maliyet_fiyati: float
+    yuk_indeksi: Optional[str] = None
+    hiz_kodu: Optional[str] = None
+    ekstra_yuk: bool = False
+    uretim_yili: Optional[int] = None

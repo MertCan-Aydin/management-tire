@@ -11,8 +11,8 @@ class LastikVerileri {
     return liste.map((e) => e['ad'] as String).toList();
   }
 
-  static Future<List<String>> ebatlar(String kategori) async {
-    final liste = await LastikVeriApi.ebatlar(kategori: kategori);
+  static Future<List<String>> ebatlar() async {
+    final liste = await LastikVeriApi.ebatlar();
     return liste.map((e) => e['ebat'] as String).toList();
   }
 

@@ -33,6 +33,10 @@ dependencies:
   # Tarih / para biçimi (Türkçe)
   intl: any
 
+  # Lastik etiketi OCR
+  google_mlkit_text_recognition: ^0.14.0
+  image_picker: ^1.1.0
+
   # Rapor PDF çıktısı ve yazdırma
   pdf: ^3.12.0
   printing: ^5.14.3

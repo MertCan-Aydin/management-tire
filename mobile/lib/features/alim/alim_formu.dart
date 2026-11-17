@@ -11,6 +11,7 @@ import '../../ui/bilesenler.dart';
 import '../../ui/form.dart';
 import '../../ui/tema.dart';
 import '../barkod/barkod_screen.dart';
+import '../barkod/etiket_okuma_screen.dart';
 import '../tedarikciler/tedarikciler_sayfasi.dart';
 import '../urunler/urun_secici.dart';
 
@@ -340,6 +341,9 @@ class _EprelFormuState extends State<_EprelFormu> {
   late final _model = TextEditingController(text: widget.eprel['model'] as String? ?? '');
   late final _ebat = TextEditingController(text: widget.eprel['ebat'] as String? ?? '');
   late String _mevsim = widget.eprel['mevsim'] as String? ?? 'Yaz';
+  late final _yukHiz = TextEditingController(text: _yukHizBirlestir());
+  late bool _ekstraYuk = widget.eprel['ekstra_yuk'] == true;
+  late final _uretimYili = TextEditingController(text: widget.eprel['uretim_yili']?.toString() ?? '');
   final _alis = TextEditingController();
   final _satis = TextEditingController();
   int _miktar = 4;
@@ -348,9 +352,23 @@ class _EprelFormuState extends State<_EprelFormu> {
   bool _kaydediliyor = false;
   String? _hata;
 
+  String _yukHizBirlestir() {
+    final yi = widget.eprel['yuk_indeksi'] as String? ?? '';
+    final hk = widget.eprel['hiz_kodu'] as String? ?? '';
+    return '$yi$hk'.trim();
+  }
+
+  ({String? yuk, String? hiz}) _yukHizAyir() {
+    final raw = _yukHiz.text.trim();
+    if (raw.isEmpty) return (yuk: null, hiz: null);
+    final m = RegExp(r'^(\d{2,3})\s*([A-Za-z])?$').firstMatch(raw);
+    if (m != null) return (yuk: m.group(1), hiz: m.group(2)?.toUpperCase());
+    return (yuk: raw, hiz: null);
+  }
+
   @override
   void dispose() {
-    for (final c in [_marka, _model, _ebat, _alis, _satis]) {
+    for (final c in [_marka, _model, _ebat, _yukHiz, _uretimYili, _alis, _satis]) {
       c.dispose();
     }
     super.dispose();
@@ -371,12 +389,17 @@ class _EprelFormuState extends State<_EprelFormu> {
       _hata = null;
     });
     try {
+      final yh = _yukHizAyir();
       final d = await UrunApi.eprelKaydet({
         'eprel_no': widget.eprel['eprel_no'],
         'marka': _marka.text.trim(),
         'model': _model.text.trim(),
         'ebat': _ebat.text.trim(),
         'mevsim': _mevsim,
+        'yuk_indeksi': yh.yuk,
+        'hiz_kodu': yh.hiz,
+        'ekstra_yuk': _ekstraYuk,
+        'uretim_yili': int.tryParse(_uretimYili.text.trim()),
         'satis_fiyati': sayiOku(_satis.text) ?? 0,
         'maliyet_fiyati': alis,
         'maliyet_bilinmiyor': _maliyetBilinmiyor,
@@ -418,6 +441,9 @@ class _EprelFormuState extends State<_EprelFormu> {
             MetinSatiri(etiket: 'Marka', kontrolcu: _marka),
             MetinSatiri(etiket: 'Model', kontrolcu: _model),
             MetinSatiri(etiket: 'Ebat', kontrolcu: _ebat),
+            MetinSatiri(etiket: 'Yük/Hız', kontrolcu: _yukHiz, ipucu: 'Örn: 92V'),
+            AnahtarSatiri(etiket: 'Ekstra Yük (XL)', deger: _ekstraYuk, degisti: (v) => setState(() => _ekstraYuk = v)),
+            MetinSatiri(etiket: 'Üretim Yılı', kontrolcu: _uretimYili, ipucu: 'Örn: 2024', klavye: TextInputType.number),
             SegmentSatiri<String>(
               etiket: 'Mevsim',
               secenekler: const {'Yaz': 'Yaz', 'Kış': 'Kış', 'Dört Mevsim': '4 Mevsim'},
@@ -547,7 +573,9 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
   String _modelAdi = '';
   String _ebatAdi = '';
   String _mevsim = 'Yaz';
-  String _ebatKategori = 'Otomobil';
+  final _yukHiz = TextEditingController();
+  bool _ekstraYuk = false;
+  final _uretimYili = TextEditingController();
   final _alis = TextEditingController();
   final _satis = TextEditingController();
   int _miktar = 4;
@@ -560,9 +588,33 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
   bool _secildi = false;
   int? _secilenUrunId;
 
+  ({String? yuk, String? hiz}) _yukHizAyir() {
+    final raw = _yukHiz.text.trim();
+    if (raw.isEmpty) return (yuk: null, hiz: null);
+    final m = RegExp(r'^(\d{2,3})\s*([A-Za-z])?$').firstMatch(raw);
+    if (m != null) return (yuk: m.group(1), hiz: m.group(2)?.toUpperCase());
+    return (yuk: raw, hiz: null);
+  }
+
+  Future<void> _etiketOku() async {
+    final sonuc = await etiketOku(context);
+    if (sonuc == null || !mounted) return;
+    setState(() {
+      if (sonuc.marka != null && _markaAdi.isEmpty) _markaAdi = sonuc.marka!;
+      if (sonuc.ebat != null && _ebatAdi.isEmpty) _ebatAdi = sonuc.ebat!;
+      if (sonuc.yukIndeksi != null || sonuc.hizKodu != null) {
+        _yukHiz.text = '${sonuc.yukIndeksi ?? ''}${sonuc.hizKodu ?? ''}';
+      }
+      if (sonuc.ekstraYuk) _ekstraYuk = true;
+    });
+    if (mounted) bildir(context, 'Etiket okundu');
+  }
+
   @override
   void dispose() {
     _arama.dispose();
+    _yukHiz.dispose();
+    _uretimYili.dispose();
     _alis.dispose();
     _satis.dispose();
     super.dispose();
@@ -621,10 +673,10 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
   }
 
   Future<void> _ebatSec() async {
-    final v = await _listeSec('Ebat Seç', () => LastikVerileri.ebatlar(_ebatKategori), _ebatAdi);
+    final v = await _listeSec('Ebat Seç', () => LastikVerileri.ebatlar(), _ebatAdi);
     if (v != null && mounted) {
       setState(() { _ebatAdi = v; _secildi = false; _secilenUrunId = null; });
-      LastikVerileri.ebatEkle(v, _ebatKategori);
+      LastikVerileri.ebatEkle(v, 'Otomobil');
     }
   }
 
@@ -661,12 +713,17 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
         );
       } else {
         final eprelNo = widget.eprelNo ?? _markaAdi.trim().hashCode.abs().toString();
+        final yh = _yukHizAyir();
         final d = await UrunApi.eprelKaydet({
           'eprel_no': eprelNo,
           'marka': _markaAdi.trim(),
           'model': _modelAdi.trim().isEmpty ? _ebatAdi.trim() : _modelAdi.trim(),
           'ebat': _ebatAdi.trim(),
           'mevsim': _mevsim,
+          'yuk_indeksi': yh.yuk,
+          'hiz_kodu': yh.hiz,
+          'ekstra_yuk': _ekstraYuk,
+          'uretim_yili': int.tryParse(_uretimYili.text.trim()),
           'satis_fiyati': sayiOku(_satis.text) ?? 0,
           'maliyet_fiyati': alis,
           'maliyet_bilinmiyor': _maliyetBilinmiyor,
@@ -754,15 +811,13 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
           baslik: 'Etiket Bilgisi',
           altNot: 'Listeden seçin veya yeni değer yazın',
           children: [
+            EylemSatiri('Etiket Fotoğrafı Çek', ikon: CupertinoIcons.camera_fill, onTap: _etiketOku),
             SecimSatiri(etiket: 'Marka', deger: _markaAdi.isEmpty ? null : _markaAdi, onTap: _markaSec),
             SecimSatiri(etiket: 'Model', deger: _modelAdi.isEmpty ? null : _modelAdi, ipucu: 'Opsiyonel', onTap: _modelSec),
-            SegmentSatiri<String>(
-              etiket: 'Araç Tipi',
-              secenekler: const {'Otomobil': 'Otomobil', 'Kamyon': 'Kamyon', 'TIR': 'TIR'},
-              secili: _ebatKategori,
-              degisti: (v) => setState(() => _ebatKategori = v),
-            ),
             SecimSatiri(etiket: 'Ebat', deger: _ebatAdi.isEmpty ? null : _ebatAdi, onTap: _ebatSec),
+            MetinSatiri(etiket: 'Yük/Hız', kontrolcu: _yukHiz, ipucu: 'Örn: 92V'),
+            AnahtarSatiri(etiket: 'Ekstra Yük (XL)', deger: _ekstraYuk, degisti: (v) => setState(() => _ekstraYuk = v)),
+            MetinSatiri(etiket: 'Üretim Yılı', kontrolcu: _uretimYili, ipucu: 'Örn: 2024', klavye: TextInputType.number),
             SegmentSatiri<String>(
               etiket: 'Mevsim',
               secenekler: const {'Yaz': 'Yaz', 'Kış': 'Kış', 'Dört Mevsim': '4 Mevsim'},

@@ -64,6 +64,9 @@ class _AppShellState extends State<AppShell> {
       _secili = i;
       _acilanlar.add(i);
     });
+    if (i >= 0 && i < _moduller.length) {
+      AktiviteApi.sayfaLog(_moduller[i].baslik);
+    }
   }
 
   /// [diger] yalnızca telefonda: "Diğer" sekmesi (_secili == -1).

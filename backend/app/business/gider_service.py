@@ -3,8 +3,8 @@ from fastapi import HTTPException
 from ..data_access import gider_dal
 
 
-def listele(cursor, baslangic, bitis, limit, offset) -> list:
-    return gider_dal.listele(cursor, baslangic, bitis, limit, offset)
+def listele(cursor, baslangic, bitis, limit, offset, kategori=None) -> list:
+    return gider_dal.listele(cursor, baslangic, bitis, limit, offset, kategori)
 
 
 def getir(cursor, gid: int) -> dict:
@@ -15,12 +15,12 @@ def getir(cursor, gid: int) -> dict:
 
 
 def ekle(cursor, data) -> int:
-    return gider_dal.ekle(cursor, data.aciklama, data.tutar)
+    return gider_dal.ekle(cursor, data)
 
 
 def guncelle(cursor, gid: int, data) -> None:
     getir(cursor, gid)
-    gider_dal.guncelle(cursor, gid, data.aciklama, data.tutar, data.tarih)
+    gider_dal.guncelle(cursor, gid, data)
 
 
 def sil(cursor, gid: int) -> None:

@@ -45,6 +45,25 @@ class UrunDialog(BaseFormDialog):
         self._ebat.setPlaceholderText("205/55 R16")
         self.form_layout.addRow("Ebat", self._ebat)
 
+        # Lastik takıları
+        self._yuk_indeksi = QLineEdit()
+        self._yuk_indeksi.setPlaceholderText("Örn: 92")
+        self._yuk_indeksi.setMaximumWidth(120)
+        self.form_layout.addRow("Yük İndeksi", self._yuk_indeksi)
+
+        self._hiz_kodu = QLineEdit()
+        self._hiz_kodu.setPlaceholderText("Örn: V, H, T")
+        self._hiz_kodu.setMaximumWidth(80)
+        self.form_layout.addRow("Hız Kodu", self._hiz_kodu)
+
+        self._ekstra_yuk = QCheckBox("Ekstra Yük (XL)")
+        self.form_layout.addRow("", self._ekstra_yuk)
+
+        self._uretim_yili = QSpinBox()
+        self._uretim_yili.setRange(0, 2099)
+        self._uretim_yili.setSpecialValueText("—")
+        self.form_layout.addRow("Üretim Yılı", self._uretim_yili)
+
         # Tip → Marka → Model zinciri
         self._tip_combo = QComboBox()
         self._tip_combo.setPlaceholderText("Önce tip seçin…")
@@ -180,6 +199,10 @@ class UrunDialog(BaseFormDialog):
         self._barkod.setText(data.get("barkod_qr", "") or "")
         self._ad.setText(data.get("ad", ""))
         self._ebat.setText(data.get("ebat", "") or "")
+        self._yuk_indeksi.setText(data.get("yuk_indeksi", "") or "")
+        self._hiz_kodu.setText(data.get("hiz_kodu", "") or "")
+        self._ekstra_yuk.setChecked(bool(data.get("ekstra_yuk", False)))
+        self._uretim_yili.setValue(int(data.get("uretim_yili", 0) or 0))
         self._satis_fiyati.setValue(float(data.get("satis_fiyati", 0)))
         self._maliyet_fiyati.setValue(float(data.get("maliyet_fiyati", 0) or 0))
         self._stok.setValue(int(data.get("stok", 0)))
@@ -211,6 +234,10 @@ class UrunDialog(BaseFormDialog):
             "barkod_qr": self._barkod.text().strip() or None,
             "ad": self._ad.text().strip(),
             "ebat": self._ebat.text().strip() or None,
+            "yuk_indeksi": self._yuk_indeksi.text().strip() or None,
+            "hiz_kodu": self._hiz_kodu.text().strip() or None,
+            "ekstra_yuk": self._ekstra_yuk.isChecked(),
+            "uretim_yili": self._uretim_yili.value() or None,
             "aciklama": self._aciklama.toPlainText().strip() or None,
             "satis_fiyati": self._satis_fiyati.value(),
             "maliyet_fiyati": self._maliyet_fiyati.value() or None,

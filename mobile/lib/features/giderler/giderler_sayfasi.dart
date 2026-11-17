@@ -72,7 +72,11 @@ class _GiderlerSayfasiState extends State<GiderlerSayfasi> with VeriYukleyici<Gi
                     for (final g in liste)
                       Satir(
                         baslik: g['aciklama'] as String? ?? '',
-                        alt: tarihSaat(g['tarih']),
+                        alt: [
+                          if (g['kategori'] != null) g['kategori'] as String,
+                          if (g['urun_adi'] != null) g['urun_adi'] as String,
+                          tarihSaat(g['tarih']),
+                        ].join(' · '),
                         sag: Text(para(g['tutar']), style: context.yazi.titleSmall?.copyWith(color: r.tehlike)),
                         onTap: () => giderFormuAc(context, mevcut: g),
                       ),
@@ -102,15 +106,30 @@ class _GiderFormuState extends State<_GiderFormu> {
   late final _aciklama = TextEditingController(text: widget.mevcut?['aciklama'] as String? ?? '');
   late final _tutar = TextEditingController(text: widget.mevcut == null ? '' : paraSade(widget.mevcut!['tutar']));
   late DateTime _tarih = tarihOku(widget.mevcut?['tarih']) ?? DateTime.now();
+  late String? _kategori = widget.mevcut?['kategori'] as String?;
+  late final _urunAdi = TextEditingController(text: widget.mevcut?['urun_adi'] as String? ?? '');
+  late final _marka = TextEditingController(text: widget.mevcut?['marka'] as String? ?? '');
+  late final _alisFiyati = TextEditingController(text: widget.mevcut?['alis_fiyati'] != null ? paraSade(widget.mevcut!['alis_fiyati']) : '');
+  late final _satisFiyati = TextEditingController(text: widget.mevcut?['satis_fiyati'] != null ? paraSade(widget.mevcut!['satis_fiyati']) : '');
+  late final _yil = TextEditingController(text: widget.mevcut?['yil']?.toString() ?? '');
+  late bool _maliyetBilinmiyor = widget.mevcut?['maliyet_bilinmiyor'] == true || widget.mevcut?['maliyet_bilinmiyor'] == 1;
   bool _kaydediliyor = false;
   String? _hata;
 
+  bool get _urunAlimi => _kategori == 'Ürün Alımı';
+
+  static const _kategoriler = ['Kira', 'Fatura', 'Personel', 'Yakıt', 'Vergi', 'Ürün Alımı', 'Diğer'];
   static const _hizliAciklamalar = ['Kira', 'Elektrik', 'Su', 'Doğalgaz', 'İnternet', 'Personel', 'Yemek', 'Yakıt', 'Vergi'];
 
   @override
   void dispose() {
     _aciklama.dispose();
     _tutar.dispose();
+    _urunAdi.dispose();
+    _marka.dispose();
+    _alisFiyati.dispose();
+    _satisFiyati.dispose();
+    _yil.dispose();
     super.dispose();
   }
 
@@ -129,11 +148,22 @@ class _GiderFormuState extends State<_GiderFormu> {
       _hata = null;
     });
     try {
-      final v = {'aciklama': _aciklama.text.trim(), 'tutar': tutar};
+      final v = <String, dynamic>{
+        'aciklama': _aciklama.text.trim(),
+        'tutar': tutar,
+        'kategori': _kategori,
+        if (_urunAlimi) ...{
+          'urun_adi': _urunAdi.text.trim().isEmpty ? null : _urunAdi.text.trim(),
+          'marka': _marka.text.trim().isEmpty ? null : _marka.text.trim(),
+          'alis_fiyati': sayiOku(_alisFiyati.text),
+          'satis_fiyati': sayiOku(_satisFiyati.text),
+          'yil': int.tryParse(_yil.text.trim()),
+          'maliyet_bilinmiyor': _maliyetBilinmiyor,
+        },
+      };
       if (widget.mevcut == null) {
         await GiderApi.ekle(v);
       } else {
-        // Saat bilgisini koru, yalnızca günü değiştir
         final eski = tarihOku(widget.mevcut!['tarih']) ?? DateTime.now();
         final yeni = DateTime(_tarih.year, _tarih.month, _tarih.day, eski.hour, eski.minute, eski.second);
         await GiderApi.guncelle(tamSayi(widget.mevcut!['id']), {...v, 'tarih': yeni.toIso8601String()});
@@ -174,13 +204,40 @@ class _GiderFormuState extends State<_GiderFormu> {
       kaydediliyor: _kaydediliyor,
       hata: _hata,
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final k in _kategoriler)
+              ChoiceChip(
+                label: Text(k),
+                selected: _kategori == k,
+                selectedColor: r.anaAcik,
+                backgroundColor: r.kart,
+                side: BorderSide(color: _kategori == k ? r.ana : r.ayrac),
+                shape: const StadiumBorder(),
+                onSelected: (s) => setState(() => _kategori = s ? k : null),
+              ),
+          ]),
+        ),
         Grup(children: [
           MetinSatiri(
               etiket: 'Açıklama', kontrolcu: _aciklama, ipucu: 'Örn. Elektrik faturası', otomatikOdak: widget.mevcut == null),
           MetinSatiri.para(etiket: 'Tutar', kontrolcu: _tutar),
           if (widget.mevcut != null) TarihSatiri(etiket: 'Tarih', deger: _tarih, degisti: (t) => setState(() => _tarih = t)),
         ]),
-        if (widget.mevcut == null)
+        if (_urunAlimi)
+          Grup(
+            baslik: 'Ürün Detayları',
+            children: [
+              MetinSatiri(etiket: 'Ürün Adı', kontrolcu: _urunAdi, ipucu: 'Örn. Jant, Akü, Yağ'),
+              MetinSatiri(etiket: 'Marka', kontrolcu: _marka, ipucu: 'Opsiyonel'),
+              MetinSatiri.para(etiket: 'Alış Fiyatı', kontrolcu: _alisFiyati),
+              MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satisFiyati),
+              MetinSatiri(etiket: 'Yıl', kontrolcu: _yil, ipucu: 'Örn: 2024', klavye: TextInputType.number),
+              AnahtarSatiri(etiket: 'Fiyat Bilinmiyor', deger: _maliyetBilinmiyor, degisti: (v) => setState(() => _maliyetBilinmiyor = v)),
+            ],
+          ),
+        if (!_urunAlimi && widget.mevcut == null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 22),
             child: Wrap(spacing: 8, runSpacing: 8, children: [

@@ -233,9 +233,12 @@ class MainWindow(QMainWindow):
         for i, btn in enumerate(self._nav_butonlar):
             btn.setChecked(i == idx)
             btn.setStyleSheet(self._nav_btn_stili(i == idx))
-        # statusBar mesajı — Hafta 7
         baslik = _MENU_OGELER[idx][0].strip()
         self.statusBar().showMessage(f"{baslik} açıldı", 2000)
+        try:
+            api_client.post("/api/loglar", json={"islem_tipi": "sayfa_goruntulem", "sayfa": baslik})
+        except Exception:
+            pass
 
     @staticmethod
     def _nav_btn_stili(secili: bool) -> str:
