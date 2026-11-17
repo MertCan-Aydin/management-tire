@@ -18,7 +18,7 @@ class _LoglarSayfasiState extends State<LoglarSayfasi> with VeriYukleyici<Loglar
   String? _filtre;
 
   @override
-  Future<List<Json>> getir() => AktiviteApi.liste(limit: 500, islemTipi: _filtre);
+  Future<List<Json>> getir() => AktiviteApi.liste(limit: 200, islemTipi: _filtre);
 
   @override
   Widget build(BuildContext context) {
