@@ -76,6 +76,11 @@ class _OzetSayfasiState extends State<OzetSayfasi> with VeriYukleyici<OzetSayfas
           IstatistikKarti(
               baslik: 'Stok Değeri', deger: gizlenebilirPara(d['toplam_stok_degeri']), ikon: CupertinoIcons.cube_box_fill, renk: r.mor),
           IstatistikKarti(
+              baslik: 'Toplam Lastik',
+              deger: '${tamSayi(d['toplam_lastik_adedi'])} adet',
+              ikon: CupertinoIcons.circle_grid_3x3_fill,
+              renk: r.turuncu),
+          IstatistikKarti(
               baslik: 'Müşteri',
               deger: '${tamSayi(d['toplam_musteri'])}',
               ikon: CupertinoIcons.person_2_fill,

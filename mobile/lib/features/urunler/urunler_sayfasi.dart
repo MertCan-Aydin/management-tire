@@ -118,7 +118,7 @@ class _UrunListesiState extends State<_UrunListesi> with VeriYukleyici<_UrunList
                     Satir(
                       onde: _StokRozeti(tamSayi(u['stok'])),
                       baslik: u['ad'] as String? ?? '',
-                      alt: urunAlt(u),
+                      alt: '${urunAlt(u)}  ·  Stok: ${tamSayi(u['stok'])}',
                       sag: Text(para(u['satis_fiyati']), style: context.yazi.titleSmall?.copyWith(color: r.metin)),
                       secili: widget.seciliId == u['id'],
                       onTap: () => widget.sec(u),
