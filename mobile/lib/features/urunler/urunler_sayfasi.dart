@@ -212,6 +212,10 @@ class _UrunDetayState extends State<UrunDetay> with VeriYukleyici<UrunDetay, Jso
             BilgiSatiri('Model', u['model_adi'] as String?),
             BilgiSatiri('Ebat', u['ebat'] as String?),
             BilgiSatiri('Mevsim', u['mevsim'] as String?),
+            BilgiSatiri('Yük İndeksi', u['yuk_indeksi'] as String?),
+            BilgiSatiri('Hız Kodu', u['hiz_kodu'] as String?),
+            if (dogruMu(u['ekstra_yuk'] ?? false)) BilgiSatiri('Ekstra Yük', 'XL'),
+            BilgiSatiri('Üretim Yılı', u['uretim_yili']?.toString()),
             BilgiSatiri('Barkod / QR', u['barkod_qr'] as String?),
           ]),
           Grup(baslik: 'Fiyat ve Stok', children: [
@@ -257,6 +261,10 @@ class _UrunFormuState extends State<_UrunFormu> {
   late final _aciklama = TextEditingController(text: m['aciklama'] as String? ?? '');
   late int _stok = tamSayi(m['stok']);
   late bool _fiziksel = dogruMu(m['fiziksel_urun_mu'] ?? true);
+  late final _yukIndeksi = TextEditingController(text: m['yuk_indeksi'] as String? ?? '');
+  late final _hizKodu = TextEditingController(text: m['hiz_kodu'] as String? ?? '');
+  late bool _ekstraYuk = dogruMu(m['ekstra_yuk'] ?? false);
+  late final _uretimYili = TextEditingController(text: m['uretim_yili']?.toString() ?? '');
   late bool _maliyetBilinmiyor = dogruMu(m['maliyet_bilinmiyor'] ?? false);
   late bool _guncelBorctan = dogruMu(m['guncel_borctan'] ?? false);
 
@@ -272,7 +280,7 @@ class _UrunFormuState extends State<_UrunFormu> {
 
   @override
   void dispose() {
-    for (final c in [_barkod, _ad, _ebat, _satis, _maliyet, _aciklama]) {
+    for (final c in [_barkod, _ad, _ebat, _satis, _maliyet, _aciklama, _yukIndeksi, _hizKodu, _uretimYili]) {
       c.dispose();
     }
     super.dispose();
@@ -332,6 +340,10 @@ class _UrunFormuState extends State<_UrunFormu> {
       'urun_tipi_id': _tip!.$1,
       'marka_id': _marka!.$1,
       'marka_modeli_id': _model!.$1,
+      'yuk_indeksi': _yukIndeksi.text.trim().isEmpty ? null : _yukIndeksi.text.trim(),
+      'hiz_kodu': _hizKodu.text.trim().isEmpty ? null : _hizKodu.text.trim(),
+      'ekstra_yuk': _ekstraYuk,
+      'uretim_yili': int.tryParse(_uretimYili.text.trim()),
     };
     try {
       if (widget.mevcut == null) {
@@ -411,6 +423,12 @@ class _UrunFormuState extends State<_UrunFormu> {
                     if (s != null) setState(() => _model = s);
                   },
           ),
+        ]),
+        Grup(baslik: 'Etiket Bilgileri', children: [
+          MetinSatiri(etiket: 'Yük İndeksi', kontrolcu: _yukIndeksi, ipucu: 'Örn: 92', klavye: TextInputType.number),
+          MetinSatiri(etiket: 'Hız Kodu', kontrolcu: _hizKodu, ipucu: 'Örn: V', buyukHarfli: true),
+          AnahtarSatiri(etiket: 'Ekstra Yük (XL)', deger: _ekstraYuk, degisti: (v) => setState(() => _ekstraYuk = v)),
+          MetinSatiri(etiket: 'Üretim Yılı', kontrolcu: _uretimYili, ipucu: 'Örn: 2024', klavye: TextInputType.number),
         ]),
         Grup(baslik: 'Fiyat ve Stok', children: [
           MetinSatiri.para(etiket: 'Satış Fiyatı', kontrolcu: _satis),
