@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from ..core.db import get_cursor
 from ..presentation.auth_router import get_current_user
 from ..business import alim_service
-from ..schemas.alim import AlimEkleRequest
+from ..schemas.alim import AlimEkleRequest, AlimGuncelleRequest
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -32,6 +32,13 @@ def ekle(body: AlimEkleRequest):
     with get_cursor() as (cursor, _):
         yeni_id = alim_service.ekle(cursor, body)
     return {"mesaj": "Alım kaydedildi", "id": yeni_id}
+
+
+@router.put("/{alim_id}")
+def guncelle(alim_id: int, body: AlimGuncelleRequest):
+    with get_cursor() as (cursor, _):
+        alim_service.guncelle_tedarikci(cursor, alim_id, body.tedarikci_id)
+    return {"mesaj": "Alım güncellendi"}
 
 
 @router.delete("/{alim_id}")

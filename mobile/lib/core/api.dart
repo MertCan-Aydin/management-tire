@@ -92,6 +92,7 @@ class AlimApi {
       _liste('/api/alimlar', {...?donem, if (tedarikciId != null) 'tedarikci_id': tedarikciId, 'limit': 200});
   static Future<Json> getir(int id) => _tek('/api/alimlar/$id');
   static Future<void> ekle(Json v) => _c.post('/api/alimlar', data: v);
+  static Future<void> guncelle(int id, Json v) => _c.put('/api/alimlar/$id', data: v);
   static Future<void> iptal(int id) => _c.delete('/api/alimlar/$id');
 }
 

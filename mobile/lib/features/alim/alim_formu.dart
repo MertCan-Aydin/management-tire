@@ -855,8 +855,25 @@ class _ManuelEtiketFormuState extends State<_ManuelEtiketFormu> {
         ]),
         if (widget.taslakVeri == null)
           Grup(children: [EylemSatiri('Taslak Olarak Kaydet', ikon: CupertinoIcons.doc, onTap: _taslakKaydet)]),
+        if (widget.taslakVeri != null)
+          Grup(children: [EylemSatiri('Taslağı Sil', yikici: true, onTap: _taslakSil)]),
       ],
     );
+  }
+
+  Future<void> _taslakSil() async {
+    final onay = await onayla(context, baslik: 'Taslağı Sil', mesaj: 'Bu taslak silinecek.', onayMetni: 'Sil', yikici: true);
+    if (!onay || !mounted) return;
+    try {
+      await TaslakApi.sil(widget.taslakId!);
+      veriDegisti();
+      if (!mounted) return;
+      bildir(context, 'Taslak silindi');
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      bildir(context, 'Taslak silinemedi');
+    }
   }
 
   Future<void> _taslakKaydet() async {

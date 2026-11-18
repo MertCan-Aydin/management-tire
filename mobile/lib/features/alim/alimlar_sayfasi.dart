@@ -5,10 +5,12 @@ import '../../core/api.dart';
 import '../../core/api_client.dart';
 import '../../core/format.dart';
 import '../../ui/bilesenler.dart';
+import '../../ui/form.dart';
 import '../../ui/liste_detay.dart';
 import '../../ui/tema.dart';
 import '../../ui/veri.dart';
 import 'alim_formu.dart';
+import '../tedarikciler/tedarikciler_sayfasi.dart';
 
 class AlimlarSayfasi extends StatelessWidget {
   const AlimlarSayfasi({super.key});
@@ -123,6 +125,28 @@ class _AlimDetayState extends State<AlimDetay> with VeriYukleyici<AlimDetay, Jso
   @override
   Future<Json> getir() => AlimApi.getir(tamSayi(widget.alim['id']));
 
+  Future<void> _tedarikciDegistir(Json a) async {
+    final t = await aramaliSec(
+      context,
+      baslik: 'Tedarikçi Seç',
+      yerelFiltre: true,
+      yukle: (_) => TedarikciApi.liste(),
+      satirBaslik: (t) => t['ad'] as String? ?? '',
+      satirAlt: (t) => t['iletisim_bilgisi'] as String?,
+      satirSag: (t) => sayi(t['guncel_borc']) > 0 ? para(t['guncel_borc']) : null,
+      yeniEkle: (ctx) => tedarikciFormuAc(ctx),
+    );
+    if (t == null || !mounted) return;
+    try {
+      await AlimApi.guncelle(tamSayi(a['id']), {'tedarikci_id': tamSayi(t['id'])});
+      veriDegisti();
+      if (!mounted) return;
+      bildir(context, 'Tedarikçi değiştirildi');
+    } catch (e) {
+      if (mounted) bildir(context, hataMesaji(e), hata: true);
+    }
+  }
+
   Future<void> _iptalEt(Json a) async {
     final onay = await onayla(context,
         baslik: 'Alımı İptal Et',
@@ -180,7 +204,11 @@ class _AlimDetayState extends State<AlimDetay> with VeriYukleyici<AlimDetay, Jso
           BilgiSatiri('Tarih', tarihSaat(a['tarih'])),
           BilgiSatiri('Toplam', para(a['toplam_tutar']), kalin: true, degerRengi: r.metin),
         ]),
-        if (!iptal && veri != null) Grup(children: [EylemSatiri('Alımı İptal Et', yikici: true, onTap: () => _iptalEt(a))]),
+        if (!iptal && veri != null)
+          Grup(children: [
+            EylemSatiri('Tedarikçiyi Değiştir', ikon: CupertinoIcons.building_2_fill, onTap: () => _tedarikciDegistir(a)),
+            EylemSatiri('Alımı İptal Et', yikici: true, onTap: () => _iptalEt(a)),
+          ]),
       ],
     );
   }

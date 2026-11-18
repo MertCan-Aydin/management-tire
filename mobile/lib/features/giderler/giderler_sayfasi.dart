@@ -210,6 +210,20 @@ class _GiderFormuState extends State<_GiderFormu> {
     }
   }
 
+  Future<void> _taslakSil() async {
+    final onay = await onayla(context, baslik: 'Taslağı Sil', mesaj: 'Bu taslak silinecek.', onayMetni: 'Sil', yikici: true);
+    if (!onay || !mounted) return;
+    try {
+      await TaslakApi.sil(widget.taslakId!);
+      veriDegisti();
+      if (!mounted) return;
+      bildir(context, 'Taslak silindi');
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() => _hata = hataMesaji(e));
+    }
+  }
+
   Future<void> _sil() async {
     final onay = await onayla(context,
         baslik: 'Gideri Sil', mesaj: '"${widget.mevcut!['aciklama']}" silinecek.', onayMetni: 'Sil', yikici: true);
@@ -283,6 +297,8 @@ class _GiderFormuState extends State<_GiderFormu> {
           ),
         if (widget.mevcut == null && widget.taslakVeri == null)
           Grup(children: [EylemSatiri('Taslak Olarak Kaydet', ikon: CupertinoIcons.doc, onTap: _taslakKaydet)]),
+        if (widget.taslakVeri != null)
+          Grup(children: [EylemSatiri('Taslağı Sil', yikici: true, onTap: _taslakSil)]),
         if (widget.mevcut != null) Grup(children: [EylemSatiri('Gideri Sil', yikici: true, onTap: _sil)]),
       ],
     );

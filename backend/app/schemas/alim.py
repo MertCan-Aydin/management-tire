@@ -23,6 +23,10 @@ class AlimKalemiRequest(BaseModel):
         return v
 
 
+class AlimGuncelleRequest(BaseModel):
+    tedarikci_id: int
+
+
 class AlimEkleRequest(BaseModel):
     tedarikci_id: int
     kalemler: List[AlimKalemiRequest]

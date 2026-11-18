@@ -22,6 +22,11 @@ def ekle(cursor, data) -> int:
     return alim_id
 
 
+def guncelle_tedarikci(cursor, alim_id: int, tedarikci_id: int) -> None:
+    _varmi(cursor, alim_id)
+    alim_dal.guncelle(cursor, alim_id, tedarikci_id)
+
+
 def iptal(cursor, alim_id: int) -> None:
     _varmi(cursor, alim_id)
     try:

@@ -14,6 +14,15 @@ def ekle(cursor, tedarikci_id: int, toplam_tutar: float) -> int:
     return row["id"] if row else None
 
 
+def guncelle(cursor, alim_id: int, tedarikci_id: int) -> None:
+    row = getir(cursor, alim_id)
+    if not row:
+        return
+    call_sp(cursor, "sp_alimlar_guncelle", [
+        alim_id, tedarikci_id, row["toplam_tutar"], row["tarih"], row.get("iptal_mi", False),
+    ])
+
+
 def iptal(cursor, alim_id: int) -> None:
     call_sp(cursor, "sp_alimlar_sil", [alim_id])
 
